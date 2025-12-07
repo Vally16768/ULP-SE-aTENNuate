@@ -1,0 +1,10 @@
+pathlib
+librosa
+
+torch
+torchaudio
+
+einops
+opt_einsum
+
+huggingface_hub
