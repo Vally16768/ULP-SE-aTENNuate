@@ -1,60 +1,185 @@
-# aTENNuate ([paper](https://arxiv.org/abs/2409.03377))
+ULP-SE-ATTENNUATE
+High-Fidelity Speech Denoising • aTENNuate Architecture • PyTorch • ONNX • Quantization • PESQ/STOI/SI-SDR
 
-aTENNuate is a network that can be configured for real-time speech enhancement on raw audio waveforms. It can perform tasks such as audio denoising, super-resolution, and de-quantization. This repo contains the network definition and a set of pre-trained weights for the aTENNuate model.
+----------------------------------------------------------------------
+OVERVIEW
+----------------------------------------------------------------------
+ULP-SE-ATTENNUATE este o implementare completă a arhitecturii moderne aTENNuate
+pentru speech denoising. Proiectul este construit pentru:
 
-Note that the repo is meant for denoising performance evaluation on custom audio samples, and is not optimized for inference. It also does not contain the recurrent configuration of the network, so it cannot be directly used for real-time inference by itself. Evaluation should ideally be done on a batch of .wav files at once as expected by the `denoise.py` script.
+- training eficient în PyTorch
+- inferență offline pe fișiere WAV
+- quantizare 32 / 16 / 8 / 4 / 2 biți
+- export ONNX
+- evaluare cu metrici intrusive (PESQ, STOI, SI-SDR, ΔSNR)
+- suport pentru DNSMOS + NISQA (non-intrusive)
 
-Please contact Brainchip Inc. to learn more on the full real-time audio denoising solution. And please consider citation [our work](https://arxiv.org/abs/2409.03377) if you find this repo useful.
+Structură proiect:
 
-## Quickstart
+ULP-SE-ATTENNUATE/
+    attenuate/model.py
+    dataset/
+        download_voicebank_demand.sh
+        prepare_splits_voicebank-demand.sh
+        voicebank-demand/train.csv
+        voicebank-demand/test.csv
+    metrics/*.py
+    train.py
+    inference.py
+    quantize.py
+    export_onnx.py
+    evaluate_metrics.py
 
-One simply needs a working Python environment, and run the following
-```
-pip install attenuate
-```
+----------------------------------------------------------------------
+1. INSTALARE
+----------------------------------------------------------------------
 
-To run the pre-trained network on custom audio samples, simply put the `.wav` files (or other format supported by `librosa`) into the `noisy_samples` directory (or any directory of your choice), and run the following
-```python
-from attenuate import aTENNuate
+Creează mediul virtual:
 
-model = aTENNuate()
-model.from_pretrained("PeaBrane/aTENNuate")
-model.denoise('noisy_samples', denoised_dir='denoised_samples')
+python -m venv .venv
+source .venv/bin/activate              (Linux/Mac)
+.\.venv\Scripts\activate               (Windows)
 
-# denoised_samples = model.denoise('noisy_samples')  # return torch tensors instead
-```
-The denoised samples will then be saved as `.wav` files in the `denoised_samples` directory.
+Instalează dependințe:
 
-## Denoising samples
+pip install -r requirements.txt
 
-### DNS1 synthetic test samples, no reverb
+----------------------------------------------------------------------
+2. DESCĂRCARE + PREGĂTIRE VoiceBank-DEMAND
+----------------------------------------------------------------------
 
-| Noisy Sample | Denoised Sample |
-|--------------|----------------|
-| [Noisy Sample 1](noisy_samples/clnsp1_train_69005_1_snr15_tl-21_fileid_158.wav) | [Denoised Sample 1](denoised_samples/clnsp1_train_69005_1_snr15_tl-21_fileid_158.wav) |
-| [Noisy Sample 2](noisy_samples/clnsp44_wind_97396_2_snr14_tl-26_fileid_271.wav) | [Denoised Sample 2](denoised_samples/clnsp44_wind_97396_2_snr14_tl-26_fileid_271.wav) |
-| [Noisy Sample 3](noisy_samples/clnsp52_amMeH4u6AO4_snr5_tl-18_fileid_19.wav) | [Denoised Sample 3](denoised_samples/clnsp52_amMeH4u6AO4_snr5_tl-18_fileid_19.wav) |
+bash dataset/download_voicebank_demand.sh
+bash dataset/prepare_splits_voicebank-demand.sh
 
-### DNS1 real recordings
+Aceste scripturi creează:
 
-| Noisy Sample | Denoised Sample |
-|--------------|----------------|
-| [Noisy Sample 1](noisy_samples/ms_realrec_headset_cafe_spk2_3.wav) | [Denoised Sample 1](denoised_samples/ms_realrec_headset_cafe_spk2_3.wav) |
-| [Noisy Sample 2](noisy_samples/audioset_realrec_babycry_2x43exdQ5bo.wav) | [Denoised Sample 2](denoised_samples/audioset_realrec_babycry_2x43exdQ5bo.wav) |
-| [Noisy Sample 3](noisy_samples/audioset_realrec_printer_IZHuH27jLUQ.wav) | [Denoised Sample 3](denoised_samples/audioset_realrec_printer_IZHuH27jLUQ.wav) |
+dataset/voicebank-demand/train.csv
+dataset/voicebank-demand/test.csv
 
-<!-- ## DNS1 synthetic test samples, no reverb
+----------------------------------------------------------------------
+3. TRAINING MODEL (train.py)
+----------------------------------------------------------------------
 
-| Noisy Sample | Denoised Sample |
-|--------------|----------------|
-| <audio controls><source src="noisy_samples/clnsp1_train_69005_1_snr15_tl-21_fileid_158.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/clnsp1_train_69005_1_snr15_tl-21_fileid_158.wav" type="audio/wav"></audio> |
-| <audio controls><source src="noisy_samples/clnsp44_wind_97396_2_snr14_tl-26_fileid_271.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/clnsp44_wind_97396_2_snr14_tl-26_fileid_271.wav" type="audio/wav"></audio> |
-| <audio controls><source src="noisy_samples/clnsp52_amMeH4u6AO4_snr5_tl-18_fileid_19.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/clnsp52_amMeH4u6AO4_snr5_tl-18_fileid_19.wav" type="audio/wav"></audio> |
+Exemplu:
 
-## DNS1 real recordings
+python train.py \
+  --train-csv dataset/voicebank-demand/train.csv \
+  --epochs 10 \
+  --batch-size 4 \
+  --lr 1e-3 \
+  --segment-len 32000 \
+  --checkpoint-out checkpoints/atennuate_fp32.pt
 
-| Noisy Sample | Denoised Sample |
-|--------------|----------------|
-| <audio controls><source src="noisy_samples/ms_realrec_headset_cafe_spk2_3.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/ms_realrec_headset_cafe_spk2_3.wav" type="audio/wav"></audio> |
-| <audio controls><source src="noisy_samples/audioset_realrec_babycry_2x43exdQ5bo.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/audioset_realrec_babycry_2x43exdQ5bo.wav" type="audio/wav"></audio> |
-| <audio controls><source src="noisy_samples/audioset_realrec_printer_IZHuH27jLUQ.wav" type="audio/wav"></audio> | <audio controls><source src="denoised_samples/audioset_realrec_printer_IZHuH27jLUQ.wav" type="audio/wav"></audio> | -->
+Parametri:
+--train-csv       CSV cu perechi noisy/clean
+--epochs          număr epoci
+--batch-size      batch size
+--lr              learning rate
+--segment-len     lungimea segmentelor audio
+--checkpoint-out  fișier în care se salvează modelul
+
+----------------------------------------------------------------------
+4. INFERENȚĂ PE UN FIȘIER AUDIO (inference.py)
+----------------------------------------------------------------------
+
+python inference.py \
+  --checkpoint checkpoints/atennuate_fp32.pt \
+  --input noisy_samples/example.wav \
+  --output denoised_samples/example_denoised.wav
+
+Parametri:
+--checkpoint   model .pt (FP32 sau cuantizat)
+--input        fișier WAV zgomotos
+--output       fișier WAV denoisat
+
+----------------------------------------------------------------------
+5. CUANTIZARE 32/16/8/4/2 BIȚI (quantize.py)
+----------------------------------------------------------------------
+
+python quantize.py \
+  --base-checkpoint checkpoints/atennuate_fp32.pt \
+  --out-dir checkpoints_quantized \
+  --bits 32 16 8 4 2
+
+Director rezultat:
+
+checkpoints_quantized/
+    atennuate_32bit.pt
+    atennuate_16bit.pt
+    atennuate_8bit.pt
+    atennuate_4bit.pt
+    atennuate_2bit.pt
+
+----------------------------------------------------------------------
+6. EXPORT ONNX (export_onnx.py)
+----------------------------------------------------------------------
+
+python export_onnx.py \
+  --checkpoint checkpoints_quantized/atennuate_8bit.pt \
+  --out onnx_exports/atennuate_8bit.onnx \
+  --sample-len 16000 \
+  --opset 17
+
+Ieșire:
+Model ONNX cu input/output dinamic: [1, 1, T]
+
+----------------------------------------------------------------------
+7. EVALUARE METRICI INTRUSIVE (evaluate_metrics.py)
+----------------------------------------------------------------------
+
+Rulează modelul pe setul test și apoi măsoară PESQ, STOI, ΔSNR, SI-SDR.
+
+python evaluate_metrics.py \
+  --checkpoint checkpoints_quantized/atennuate_8bit.pt \
+  --manifest dataset/voicebank-demand/test.csv \
+  --enhanced-dir eval_outputs/8bit \
+  --oracle-json eval_outputs/8bit/oracle_metrics.json
+
+Director rezultat:
+
+eval_outputs/8bit/
+    *.wav (fișiere enhanced)
+    manifest_oracle.csv
+    oracle_metrics.json
+
+----------------------------------------------------------------------
+8. FLUX COMPLET RECOMANDAT
+----------------------------------------------------------------------
+
+bash dataset/download_voicebank_demand.sh
+bash dataset/prepare_splits_voicebank-demand.sh
+
+python train.py --train-csv dataset/voicebank-demand/train.csv
+
+python quantize.py --base-checkpoint checkpoints/atennuate_fp32.pt
+
+python export_onnx.py \
+  --checkpoint checkpoints_quantized/atennuate_8bit.pt \
+  --out onnx_exports/atennuate_8bit.onnx
+
+python evaluate_metrics.py \
+  --checkpoint checkpoints_quantized/atennuate_8bit.pt \
+  --manifest dataset/voicebank-demand/test.csv \
+  --enhanced-dir eval_outputs/8bit \
+  --oracle-json eval_outputs/8bit/oracle_metrics.json
+
+python inference.py \
+  --checkpoint checkpoints/atennuate_fp32.pt \
+  --input path/to/noisy.wav \
+  --output path/to/noisy_denoised.wav
+
+----------------------------------------------------------------------
+9. ROADMAP
+----------------------------------------------------------------------
+
+- integrare MRSTFT Loss / SI-SNR Loss
+- inferență real-time stateful (SSM streaming)
+- optimizări ONNX pentru mobile (CoreML / NNAPI / TensorRT)
+- suport pentru Edge TPU
+- versiuni mini (Mobile/Tiny)
+
+----------------------------------------------------------------------
+10. LICENȚĂ
+----------------------------------------------------------------------
+MIT License — utilizare liberă academică, comercială și embedded.
+
