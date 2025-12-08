@@ -7,7 +7,7 @@ import torch
 import torchaudio
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
-from tqdm.auto import tqdm  # progress bar
+from tqdm.auto import tqdm
 
 from attenuate.model import aTENNuate
 
@@ -44,7 +44,7 @@ class VoiceBankDemandDataset(Dataset):
         return len(self.pairs)
 
     def _load_mono(self, path: Path) -> torch.Tensor:
-        # You can switch to librosa / soundfile if torchaudio gives issues
+        # Dacă torchaudio/codec îți face probleme, se poate schimba pe soundfile/librosa.
         wav, sr = torchaudio.load(path)
         if wav.shape[0] > 1:
             wav = wav.mean(dim=0, keepdim=True)
@@ -78,7 +78,6 @@ def train_epoch(model, loader, optimizer, device, epoch: int):
     running_loss = 0.0
     n = 0
 
-    # tqdm progress bar over batches
     progress_bar = tqdm(loader, desc=f"Epoch {epoch:03d} [train]", unit="batch")
 
     for noisy, clean in progress_bar:
@@ -107,13 +106,22 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--train-csv", required=True,
                     help="CSV VoiceBank-DEMAND train (coloane: noisy,clean)")
-    ap.add_argument("--epochs", type=int, default=10)
+    ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--batch-size", type=int, default=4)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--segment-len", type=int, default=16000 * 2)
     ap.add_argument("--checkpoint-out", type=str, default="checkpoints/atennuate_fp32.pt")
-    ap.add_argument("--num-workers", type=int, default=0,
-                    help="DataLoader num_workers (0 = no multiprocessing, safer)")
+    ap.add_argument("--num-workers", type=int, default=4,
+                    help="DataLoader num_workers (0 = fără multiprocessing, mai sigur)")
+    # hiperparametri pentru scheduler + early stopping
+    ap.add_argument("--lr-factor", type=float, default=0.5,
+                    help="Factor de reducere LR pentru ReduceLROnPlateau")
+    ap.add_argument("--lr-patience", type=int, default=3,
+                    help="Patience (în epoci) pentru ReduceLROnPlateau")
+    ap.add_argument("--min-lr", type=float, default=1e-6,
+                    help="LR minim pentru ReduceLROnPlateau")
+    ap.add_argument("--early-stop-patience", type=int, default=7,
+                    help="Patience (în epoci) pentru early stopping")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -129,12 +137,25 @@ def main():
         drop_last=True,
         pin_memory=(device == "cuda"),
     )
-    print(f"[DataLoader] batches per epoch: {len(dl)}")
+    print(f"[DataLoader] Batches per epoch: {len(dl)}")
 
     # Model
     model = aTENNuate().to(device)
 
+    # Optimizer + scheduler + early stopping state
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="min",
+        factor=args.lr_factor,
+        patience=args.lr_patience,
+        verbose=True,
+        min_lr=args.min_lr,
+    )
+
+    best_loss = float("inf")
+    epochs_no_improve = 0
+    early_stop_patience = args.early_stop_patience
 
     ckpt_path = Path(args.checkpoint_out)
     ckpt_path.parent.mkdir(parents=True, exist_ok=True)
@@ -144,8 +165,23 @@ def main():
         loss = train_epoch(model, dl, optimizer, device, epoch)
         print(f"[Epoch {epoch:03d}] mean train L1={loss:.6f}")
 
-        torch.save(model.state_dict(), ckpt_path)
-        print(f"  Saved checkpoint -> {ckpt_path}")
+        # scheduler pe baza loss-ului mediu pe epocă
+        scheduler.step(loss)
+
+        # early stopping + best checkpoint
+        if loss < best_loss:
+            best_loss = loss
+            epochs_no_improve = 0
+            torch.save(model.state_dict(), ckpt_path)
+            print(f"  Improved (best L1={best_loss:.6f}); checkpoint saved -> {ckpt_path}")
+        else:
+            epochs_no_improve += 1
+            print(f"  No improvement for {epochs_no_improve} epoch(s). "
+                  f"Best L1 so far: {best_loss:.6f}")
+
+        if epochs_no_improve >= early_stop_patience:
+            print("Early stopping triggered.")
+            break
 
     print("Training finished.")
 
