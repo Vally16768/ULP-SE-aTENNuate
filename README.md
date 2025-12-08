@@ -166,8 +166,8 @@ python evaluate_metrics.py \
 
 python inference.py \
   --checkpoint checkpoints/atennuate_fp32.pt \
-  --input path/to/noisy.wav \
-  --output path/to/noisy_denoised.wav
+  --input noisy_samples/audioset_realrec_babycry_2x43exdQ5bo.wav \
+  --output clean_samples/audioset_realrec_babycry_2x43exdQ5bo.wav
 
 ----------------------------------------------------------------------
 9. ROADMAP
