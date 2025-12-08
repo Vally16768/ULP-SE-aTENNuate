@@ -7,6 +7,7 @@ import torch
 import torchaudio
 from torch import nn
 from torch.utils.data import Dataset, DataLoader
+from tqdm.auto import tqdm  # progress bar
 
 from attenuate.model import aTENNuate
 
@@ -37,10 +38,13 @@ class VoiceBankDemandDataset(Dataset):
         if not self.pairs:
             raise ValueError(f"No rows found in {csv_path}")
 
+        print(f"[Dataset] Loaded {len(self.pairs)} pairs from {csv_path}")
+
     def __len__(self):
         return len(self.pairs)
 
     def _load_mono(self, path: Path) -> torch.Tensor:
+        # You can switch to librosa / soundfile if torchaudio gives issues
         wav, sr = torchaudio.load(path)
         if wav.shape[0] > 1:
             wav = wav.mean(dim=0, keepdim=True)
@@ -68,20 +72,23 @@ class VoiceBankDemandDataset(Dataset):
         return noisy_seg, clean_seg
 
 
-def train_epoch(model, loader, optimizer, device):
+def train_epoch(model, loader, optimizer, device, epoch: int):
     model.train()
     loss_fn = nn.L1Loss()
     running_loss = 0.0
     n = 0
 
-    for noisy, clean in loader:
+    # tqdm progress bar over batches
+    progress_bar = tqdm(loader, desc=f"Epoch {epoch:03d} [train]", unit="batch")
+
+    for noisy, clean in progress_bar:
         noisy = noisy.to(device)          # (B, T)
         clean = clean.to(device)
 
         noisy = noisy.unsqueeze(1)        # (B, 1, T)
         clean = clean.unsqueeze(1)
 
-        optimizer.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
         out = model(noisy)
         loss = loss_fn(out, clean)
         loss.backward()
@@ -89,6 +96,9 @@ def train_epoch(model, loader, optimizer, device):
 
         running_loss += loss.item() * noisy.size(0)
         n += noisy.size(0)
+
+        avg_loss = running_loss / max(1, n)
+        progress_bar.set_postfix({"L1": f"{avg_loss:.6f}"})
 
     return running_loss / max(1, n)
 
@@ -102,16 +112,27 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--segment-len", type=int, default=16000 * 2)
     ap.add_argument("--checkpoint-out", type=str, default="checkpoints/atennuate_fp32.pt")
+    ap.add_argument("--num-workers", type=int, default=0,
+                    help="DataLoader num_workers (0 = no multiprocessing, safer)")
     args = ap.parse_args()
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
+    # Dataset + DataLoader
     ds = VoiceBankDemandDataset(args.train_csv, segment_len=args.segment_len)
-    dl = DataLoader(ds, batch_size=args.batch_size, shuffle=True, num_workers=4, drop_last=True)
+    dl = DataLoader(
+        ds,
+        batch_size=args.batch_size,
+        shuffle=True,
+        num_workers=args.num_workers,
+        drop_last=True,
+        pin_memory=(device == "cuda"),
+    )
+    print(f"[DataLoader] batches per epoch: {len(dl)}")
 
-    model = aTENNuate()
-    model.to(device)
+    # Model
+    model = aTENNuate().to(device)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
 
@@ -119,8 +140,9 @@ def main():
     ckpt_path.parent.mkdir(parents=True, exist_ok=True)
 
     for epoch in range(1, args.epochs + 1):
-        loss = train_epoch(model, dl, optimizer, device)
-        print(f"[Epoch {epoch:03d}] train L1={loss:.6f}")
+        print(f"\n===== Epoch {epoch:03d}/{args.epochs} =====")
+        loss = train_epoch(model, dl, optimizer, device, epoch)
+        print(f"[Epoch {epoch:03d}] mean train L1={loss:.6f}")
 
         torch.save(model.state_dict(), ckpt_path)
         print(f"  Saved checkpoint -> {ckpt_path}")
