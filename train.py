@@ -1,3 +1,5 @@
+# train.py
+
 import argparse
 import csv
 from pathlib import Path
@@ -10,6 +12,7 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm.auto import tqdm
 
 from attenuate.model import aTENNuate
+from attenuate.losses import MultiResolutionERBSpectralLoss
 
 
 class VoiceBankDemandDataset(Dataset):
@@ -72,13 +75,34 @@ class VoiceBankDemandDataset(Dataset):
         return noisy_seg, clean_seg
 
 
-def train_epoch(model, loader, optimizer, device, epoch: int):
+def train_epoch(
+    model: nn.Module,
+    loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    device: str,
+    epoch: int,
+    total_epochs: int,
+    wave_loss_fn: nn.Module,
+    spec_loss_fn: nn.Module,
+) -> float:
+    """
+    Un epoch de train.
+
+    Loss total:
+        loss = SmoothL1(enhanced, clean) + λ_spec * ERB/mel spectral loss
+
+    unde λ_spec crește liniar de la 0 la 1:
+        λ_spec = epoch / total_epochs
+    """
     model.train()
-    loss_fn = nn.L1Loss()
     running_loss = 0.0
+    running_wave = 0.0
+    running_spec = 0.0
     n = 0
 
     progress_bar = tqdm(loader, desc=f"Epoch {epoch:03d} [train]", unit="batch")
+
+    lambda_spec = float(epoch) / float(total_epochs)
 
     for noisy, clean in progress_bar:
         noisy = noisy.to(device)          # (B, T)
@@ -88,16 +112,31 @@ def train_epoch(model, loader, optimizer, device, epoch: int):
         clean = clean.unsqueeze(1)
 
         optimizer.zero_grad(set_to_none=True)
-        out = model(noisy)
-        loss = loss_fn(out, clean)
+
+        out = model(noisy)                # (B, 1, T)
+
+        wave_loss = wave_loss_fn(out, clean)
+        spec_loss = spec_loss_fn(out, clean)
+        loss = wave_loss + lambda_spec * spec_loss
+
         loss.backward()
         optimizer.step()
 
-        running_loss += loss.item() * noisy.size(0)
-        n += noisy.size(0)
+        batch_size = noisy.size(0)
+        running_loss += loss.item() * batch_size
+        running_wave += wave_loss.item() * batch_size
+        running_spec += spec_loss.item() * batch_size
+        n += batch_size
 
         avg_loss = running_loss / max(1, n)
-        progress_bar.set_postfix({"L1": f"{avg_loss:.6f}"})
+        avg_wave = running_wave / max(1, n)
+        avg_spec = running_spec / max(1, n)
+        progress_bar.set_postfix({
+            "loss": f"{avg_loss:.6f}",
+            "wave": f"{avg_wave:.6f}",
+            "spec": f"{avg_spec:.6f}",
+            "λ_spec": f"{lambda_spec:.2f}",
+        })
 
     return running_loss / max(1, n)
 
@@ -106,9 +145,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--train-csv", required=True,
                     help="CSV VoiceBank-DEMAND train (coloane: noisy,clean)")
-    ap.add_argument("--epochs", type=int, default=50)
+    ap.add_argument("--epochs", type=int, default=200)
     ap.add_argument("--batch-size", type=int, default=4)
-    ap.add_argument("--lr", type=float, default=1e-3)
+    # articolul folosește lr=5e-3; setăm default la 5e-3
+    ap.add_argument("--lr", type=float, default=5e-3)
     ap.add_argument("--segment-len", type=int, default=16000 * 2)
     ap.add_argument("--checkpoint-out", type=str, default="checkpoints/atennuate_fp32.pt")
     ap.add_argument("--num-workers", type=int, default=4,
@@ -142,14 +182,21 @@ def main():
     # Model
     model = aTENNuate().to(device)
 
+    # Loss functions (SmoothL1 + ERB/mel spectral)
+    wave_loss_fn = nn.SmoothL1Loss(beta=0.5)
+    spec_loss_fn = MultiResolutionERBSpectralLoss(sample_rate=16000)
+
     # Optimizer + scheduler + early stopping state
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    optimizer = torch.optim.AdamW(
+        model.parameters(),
+        lr=args.lr,
+        weight_decay=0.02,   # ca în articol
+    )
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
         optimizer,
         mode="min",
         factor=args.lr_factor,
         patience=args.lr_patience,
-        verbose=True,
         min_lr=args.min_lr,
     )
 
@@ -162,8 +209,17 @@ def main():
 
     for epoch in range(1, args.epochs + 1):
         print(f"\n===== Epoch {epoch:03d}/{args.epochs} =====")
-        loss = train_epoch(model, dl, optimizer, device, epoch)
-        print(f"[Epoch {epoch:03d}] mean train L1={loss:.6f}")
+        loss = train_epoch(
+            model,
+            dl,
+            optimizer,
+            device,
+            epoch,
+            args.epochs,
+            wave_loss_fn,
+            spec_loss_fn,
+        )
+        print(f"[Epoch {epoch:03d}] mean train loss={loss:.6f}")
 
         # scheduler pe baza loss-ului mediu pe epocă
         scheduler.step(loss)
@@ -173,11 +229,13 @@ def main():
             best_loss = loss
             epochs_no_improve = 0
             torch.save(model.state_dict(), ckpt_path)
-            print(f"  Improved (best L1={best_loss:.6f}); checkpoint saved -> {ckpt_path}")
+            print(f"  Improved (best loss={best_loss:.6f}); checkpoint saved -> {ckpt_path}")
         else:
             epochs_no_improve += 1
-            print(f"  No improvement for {epochs_no_improve} epoch(s). "
-                  f"Best L1 so far: {best_loss:.6f}")
+            print(
+                f"  No improvement for {epochs_no_improve} epoch(s). "
+                f"Best loss so far: {best_loss:.6f}"
+            )
 
         if epochs_no_improve >= early_stop_patience:
             print("Early stopping triggered.")

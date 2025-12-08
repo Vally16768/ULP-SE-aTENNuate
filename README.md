@@ -130,10 +130,10 @@ Model ONNX cu input/output dinamic: [1, 1, T]
 Rulează modelul pe setul test și apoi măsoară PESQ, STOI, ΔSNR, SI-SDR.
 
 python evaluate_metrics.py \
-  --checkpoint checkpoints_quantized/atennuate_8bit.pt \
-  --manifest dataset/voicebank-demand/test.csv \
-  --enhanced-dir eval_outputs/8bit \
-  --oracle-json eval_outputs/8bit/oracle_metrics.json
+  --checkpoint checkpoints_quantized/atennuate_32bit.pt \
+  --manifest dataset/voicebank-demand/16k/test.csv \
+  --enhanced-dir eval_outputs/32bit \
+  --oracle-json eval_outputs/32bit/oracle_metrics.json
 
 Director rezultat:
 
