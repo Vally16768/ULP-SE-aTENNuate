@@ -11,7 +11,11 @@ from metrics.oracle import main as oracle_main
 from metrics.metrics_logger import setup_metrics_logger
 
 
-def load_mono_16k(path: Path, target_sr: int = 16000) -> torch.Tensor:
+def load_mono_16k(path: Path, target_sr: int = 16000):
+    """
+    Încarcă audio, convertește la mono și resample la 16 kHz.
+    Returnează (waveform, sample_rate).
+    """
     wav, sr = torchaudio.load(path)
     if wav.shape[0] > 1:
         wav = wav.mean(dim=0, keepdim=True)
@@ -41,6 +45,7 @@ def generate_enhanced(
     model.to(device)
     model.eval()
 
+    # citim manifestul (noisy,clean)
     rows_in: List[Dict[str, str]] = []
     with manifest.open("r", newline="") as f:
         reader = csv.DictReader(f)
@@ -80,7 +85,7 @@ def generate_enhanced(
             "enhanced": enh_path.as_posix(),
         })
 
-    # scriem manifest pentru oracle
+    # scriem manifest pentru oracle (clean,noisy,enhanced)
     oracle_manifest = enhanced_dir / "manifest_oracle.csv"
     with oracle_manifest.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=["clean", "noisy", "enhanced"])
@@ -91,17 +96,31 @@ def generate_enhanced(
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Rulează metricile intrusive (oracle) pentru un model.")
-    ap.add_argument("--checkpoint", required=True, help="Checkpoint model (.pt).")
-    ap.add_argument("--manifest", required=True,
-                    help="CSV cu coloane noisy,clean (VoiceBank-DEMAND test).")
-    ap.add_argument("--enhanced-dir", required=True,
-                    help="Director unde se salvează enhanced wavs + manifest_oracle.csv.")
-    ap.add_argument("--oracle-json", required=True,
-                    help="Fișier JSON de ieșire pentru oracle.")
-    ap.add_argument("--max-files", type=int, default=None,
-                    help="Număr maxim de fișiere de evaluat (debug).")
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap = argparse.ArgumentParser(
+        description="Rulează metricile intrusive (oracle) pentru un model."
+    )
+    ap.add_argument(
+        "--checkpoint", required=True, help="Checkpoint model (.pt)."
+    )
+    ap.add_argument(
+        "--manifest", required=True,
+        help="CSV cu coloane noisy,clean (VoiceBank-DEMAND test)."
+    )
+    ap.add_argument(
+        "--enhanced-dir", required=True,
+        help="Director unde se salvează enhanced wavs + manifest_oracle.csv."
+    )
+    ap.add_argument(
+        "--oracle-json", required=True,
+        help="Fișier JSON de ieșire pentru oracle."
+    )
+    ap.add_argument(
+        "--max-files", type=int, default=None,
+        help="Număr maxim de fișiere de evaluat (debug)."
+    )
+    ap.add_argument(
+        "--device", default="cuda" if torch.cuda.is_available() else "cpu"
+    )
     args = ap.parse_args()
 
     setup_metrics_logger()  # pentru log-urile metricilor
@@ -125,7 +144,11 @@ def main():
     )
 
     # rulează oracle (PESQ, STOI, SI-SDR, Delta-SNR) și scrie JSON
-    oracle_main(oracle_manifest.as_posix(), oracle_json.as_posix(), thresholds=None)
+    oracle_main(
+        manifest_csv=oracle_manifest.as_posix(),
+        out_json=oracle_json.as_posix(),
+        thresholds=None,
+    )
 
 
 if __name__ == "__main__":

@@ -7,3 +7,4 @@ test*
 upload*
 build
 dist
+eval_outputs/

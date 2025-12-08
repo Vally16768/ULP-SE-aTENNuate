@@ -155,11 +155,12 @@ python quantize.py --base-checkpoint checkpoints/atennuate_fp32.pt
 
 python export_onnx.py \
   --checkpoint checkpoints_quantized/atennuate_8bit.pt \
-  --out onnx_exports/atennuate_8bit.onnx
+  --out onnx_exports/atennuate_8bit_T32000.onnx \
+  --seq-len 32000
 
 python evaluate_metrics.py \
   --checkpoint checkpoints_quantized/atennuate_8bit.pt \
-  --manifest dataset/voicebank-demand/test.csv \
+  --manifest dataset/voicebank-demand/16k/test.csv \
   --enhanced-dir eval_outputs/8bit \
   --oracle-json eval_outputs/8bit/oracle_metrics.json
 
