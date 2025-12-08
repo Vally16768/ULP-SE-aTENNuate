@@ -63,7 +63,7 @@ dataset/voicebank-demand/test.csv
 Exemplu:
 
 python train.py \
-  --train-csv dataset/voicebank-demand/train.csv \
+  --train-csv dataset/voicebank-demand/16k/train.csv \
   --epochs 10 \
   --batch-size 4 \
   --lr 1e-3 \
@@ -149,7 +149,7 @@ eval_outputs/8bit/
 bash dataset/download_voicebank_demand.sh
 bash dataset/prepare_splits_voicebank-demand.sh
 
-python train.py --train-csv dataset/voicebank-demand/train.csv
+python train.py --train-csv dataset/voicebank-demand/16k/train.csv
 
 python quantize.py --base-checkpoint checkpoints/atennuate_fp32.pt
 
