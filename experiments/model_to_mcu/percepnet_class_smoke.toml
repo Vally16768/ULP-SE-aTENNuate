@@ -1,0 +1,31 @@
+train_csv = "runs/prepared_smoke_v2/train.csv"
+val_csv = "runs/prepared_smoke_v2/val.csv"
+quick_val_csv = ""
+run_dir = "runs/model_to_mcu/percepnet_class_smoke"
+checkpoint_out = "runs/model_to_mcu/percepnet_class_smoke/best.pt"
+device = "cpu"
+sample_rate = 16000
+seed = 1337
+epochs = 2
+batch_size = 2
+num_workers = 0
+segment_len = 32000
+lr = 5.0e-4
+min_lr = 1.0e-6
+warmup_ratio = 0.05
+weight_decay = 0.02
+grad_clip = 5.0
+ema_decay = 0.0
+eval_every = 1
+full_val_every = 1
+full_val_on_quick_best = false
+early_stop_patience = 10
+save_top_k = 1
+max_eval_files = 4
+
+model = { kind = "percepnet_class", sample_rate = 16000, n_fft = 512, hop_length = 160, win_length = 320, n_bands = 32, hidden_size = 96, num_layers = 2, mask_gain = 1.2, residual_gain = 0.10 }
+scheduler = { kind = "reduce_on_plateau", factor = 0.5, patience = 2, threshold = 0.001, cooldown = 0 }
+objective = { wave_beta = 0.35, erb_weight = 0.60, mrstft_weight = 0.35, complex_weight = 0.0, sisdr_weight = 0.05, high_snr_weight = 0.02, high_snr_threshold_db = 15.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false, probability = 0.0, max_ops = 1, ramp_ratio = 0.0 }
+frontend = { kind = "none" }
+stage2 = { enabled = false }

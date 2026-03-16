@@ -1,0 +1,32 @@
+{
+  "name": "Alif Ensemble E3",
+  "family": "ensemble_e3",
+  "category": "mcu_npu",
+  "core": "Dual Arm Cortex-M55 + dual Ethos-U55",
+  "freq_mhz": 400,
+  "sram_bytes": 14155776,
+  "flash_bytes": 5767168,
+  "cpu_mac_per_cycle": 4.0,
+  "cpu_efficiency": 0.55,
+  "dsp_mac_per_cycle": 4.0,
+  "dsp_efficiency": 0.55,
+  "active_current_uA_per_MHz": 27.0,
+  "supply_voltage_v": 3.3,
+  "npu_gops": 250.0,
+  "npu_efficiency": 0.65,
+  "npu_power_mw_at_full": 60.0,
+  "npu_supported_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "supports_external_memory": true,
+  "on_chip_only": true,
+  "external_flash_bytes": 16777216,
+  "external_sram_bytes": 0,
+  "external_memory_penalty_factor": 1.08,
+  "external_memory_power_mw": 6.0,
+  "notes": "Best on-chip memory option in this comparison: up to 5.5 MB MRAM and 13.5 MB SRAM, plus very large Ethos-U55 throughput.",
+  "sources": [
+    "https://alifsemi.com/ensemble-e3-series/"
+  ]
+}

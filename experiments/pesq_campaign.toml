@@ -1,0 +1,123 @@
+[paths]
+raw_root = "dataset/voicebank-demand/raw"
+train_csv = "dataset/voicebank-demand/16k/train.csv"
+val_csv = "dataset/voicebank-demand/16k/val.csv"
+quick_val_csv = "dataset/voicebank-demand/16k/val_quick.csv"
+test_csv = "dataset/voicebank-demand/16k/test.csv"
+output_root = "runs/pesq_campaign"
+
+[dataset]
+sample_rate = 16000
+val_speaker_fraction = 0.1
+val_quick_count = 96
+seed = 1337
+auto_download = true
+manifest_only = false
+overwrite = false
+allow_utterance_fallback = false
+
+[training_defaults]
+sample_rate = 16000
+seed = 1337
+epochs = 80
+batch_size = 4
+num_workers = 0
+segment_len = 64000
+lr = 0.001
+min_lr = 1.0e-6
+warmup_ratio = 0.05
+weight_decay = 0.02
+grad_clip = 5.0
+ema_decay = 0.999
+eval_every = 2
+full_val_every = 5
+full_val_on_quick_best = true
+early_stop_patience = 8
+save_top_k = 3
+objective = { wave_beta = 0.5, erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.0, high_snr_weight = 0.0, high_snr_threshold_db = 15.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false, probability = 0.75, max_ops = 2, ramp_ratio = 0.3, gain_db_range = [-6.0, 6.0], bandwidth_sample_rates = [8000, 12000], quantization_modes = ["mulaw", "uniform"], quantization_bits = [8, 6, 4], clip_threshold_range = [0.35, 0.95], reverb_ir_ms_range = [20.0, 80.0] }
+frontend = { kind = "none" }
+
+[smoke]
+enabled = false
+
+[promotion]
+top_k = 3
+max_stoi_drop = 0.015
+max_sisdr_drop = 0.5
+confirmation_seed = 2337
+confirmation_overrides = { epochs = 80, early_stop_patience = 8 }
+
+[surrogate]
+enabled = true
+max_rows_per_manifest = 96
+epochs = 20
+batch_size = 8
+lr = 0.001
+min_corr = 0.85
+finetune_epochs = 10
+finetune_weight = 0.05
+finetune_warmup_epochs = 2
+min_pesq_gain = 0.02
+max_stoi_drop = 0.01
+max_sisdr_drop = 0.5
+include_train_manifest = true
+finetune_overrides = { lr = 0.0003, eval_every = 1, full_val_every = 1, early_stop_patience = 4 }
+
+[[experiments]]
+name = "repo_baseline"
+segment_len = 32000
+ema_decay = 0.0
+grad_clip = 0.0
+objective = { erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.0, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "repo_baseline_spectral_gate"
+segment_len = 32000
+ema_decay = 0.0
+grad_clip = 0.0
+epochs = 30
+early_stop_patience = 6
+lr = 3.0e-4
+warmup_ratio = 0.02
+init_checkpoint = "runs/pesq_campaign/base/repo_baseline/best.pt"
+objective = { erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.0, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+frontend = { kind = "spectral_gate", noise_quantile = 0.15, threshold_scale = 1.25, mask_slope = 10.0, mask_floor = 0.10 }
+
+[[experiments]]
+name = "protocol_longctx"
+segment_len = 64000
+objective = { erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.0, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "erb_mrstft"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.0, sisdr_weight = 0.02, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "erb_mrstft_complex"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.1, sisdr_weight = 0.02, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "erb_mrstft_oa"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.0, sisdr_weight = 0.02, high_snr_weight = 0.05, band_emphasis_strength = 0.0 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "erb_mrstft_band"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.0, sisdr_weight = 0.02, high_snr_weight = 0.0, band_emphasis_strength = 0.25 }
+augment = { enabled = false }
+
+[[experiments]]
+name = "erb_mrstft_aug"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.0, sisdr_weight = 0.02, high_snr_weight = 0.0, band_emphasis_strength = 0.0 }
+augment = { enabled = true }
+
+[[experiments]]
+name = "erb_mrstft_full"
+objective = { erb_weight = 0.75, mrstft_weight = 0.25, complex_weight = 0.1, sisdr_weight = 0.02, high_snr_weight = 0.05, band_emphasis_strength = 0.25 }
+augment = { enabled = true }

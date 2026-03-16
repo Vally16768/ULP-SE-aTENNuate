@@ -1,0 +1,30 @@
+train_csv = "dataset/voicebank-demand/8k/train.csv"
+val_csv = "dataset/voicebank-demand/8k/val.csv"
+quick_val_csv = ""
+run_dir = "runs/model_to_mcu/atennuate_8k"
+checkpoint_out = "runs/model_to_mcu/atennuate_8k/best.pt"
+device = "cuda"
+sample_rate = 8000
+seed = 1337
+epochs = 120
+batch_size = 6
+num_workers = 0
+segment_len = 32000
+lr = 1.0e-3
+min_lr = 1.0e-6
+warmup_ratio = 0.05
+weight_decay = 0.02
+grad_clip = 5.0
+ema_decay = 0.999
+eval_every = 1
+full_val_every = 2
+full_val_on_quick_best = false
+early_stop_patience = 10
+save_top_k = 3
+
+model = { kind = "atennuate", sample_rate = 8000, channels = [16, 32, 64, 96, 128, 256], num_coeffs = 16, repeat = 16, resample_factors = [4, 4, 2, 2, 2, 2], pre_conv = true }
+scheduler = { kind = "reduce_on_plateau", factor = 0.5, patience = 4, threshold = 0.001, cooldown = 1 }
+objective = { wave_beta = 0.5, erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.05, high_snr_weight = 0.02, high_snr_threshold_db = 15.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false, probability = 0.75, max_ops = 2, ramp_ratio = 0.3 }
+frontend = { kind = "none" }
+stage2 = { enabled = false }

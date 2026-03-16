@@ -1,0 +1,33 @@
+{
+  "name": "NXP i.MX RT700",
+  "family": "imx_rt700",
+  "category": "mcu_npu",
+  "core": "Dual Arm Cortex-M33 + HiFi4/HiFi1 DSP + Neutron NPU",
+  "freq_mhz": 325,
+  "sram_bytes": 7864320,
+  "flash_bytes": 0,
+  "cpu_mac_per_cycle": 1.0,
+  "cpu_efficiency": 0.35,
+  "dsp_mac_per_cycle": 6.0,
+  "dsp_efficiency": 0.55,
+  "active_current_uA_per_MHz": 45.0,
+  "supply_voltage_v": 3.3,
+  "npu_gops": 20.8,
+  "npu_efficiency": 0.65,
+  "npu_power_mw_at_full": 35.0,
+  "npu_supported_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "supports_external_memory": true,
+  "on_chip_only": true,
+  "external_flash_bytes": 67108864,
+  "external_sram_bytes": 8388608,
+  "external_memory_penalty_factor": 1.08,
+  "external_memory_power_mw": 8.0,
+  "notes": "Strict profile treats RT700 as flashless on-chip. It has ample SRAM but normally relies on external xSPI memory for application storage.",
+  "sources": [
+    "https://www.nxp.com/products/i.MX-RT700",
+    "https://www.nxp.com/docs/en/application-note/AN14700.pdf"
+  ]
+}

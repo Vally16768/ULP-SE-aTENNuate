@@ -1,0 +1,33 @@
+{
+  "name": "Infineon PSoC Edge E84",
+  "family": "psoc_edge_e84",
+  "category": "mcu_npu",
+  "core": "Arm Cortex-M55 + Cortex-M33 + Ethos-U55",
+  "freq_mhz": 400,
+  "sram_bytes": 4194304,
+  "flash_bytes": 0,
+  "cpu_mac_per_cycle": 4.0,
+  "cpu_efficiency": 0.55,
+  "dsp_mac_per_cycle": 4.0,
+  "dsp_efficiency": 0.55,
+  "active_current_uA_per_MHz": 40.0,
+  "supply_voltage_v": 3.3,
+  "npu_gops": 20.0,
+  "npu_efficiency": 0.65,
+  "npu_power_mw_at_full": 40.0,
+  "npu_supported_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "supports_external_memory": true,
+  "on_chip_only": true,
+  "external_flash_bytes": 67108864,
+  "external_sram_bytes": 8388608,
+  "external_memory_penalty_factor": 1.10,
+  "external_memory_power_mw": 8.0,
+  "notes": "Strict profile assumes no confirmed on-chip application flash budget and evaluates E84 as SRAM-rich but flash-constrained on-chip.",
+  "sources": [
+    "https://www.infineon.com/products/microcontroller/32-bit-psoc-arm-cortex/32-bit-psoc-edge-arm/psoc-edge-e84",
+    "https://www.infineon.com/part/PSE846GOS4DBZC4"
+  ]
+}

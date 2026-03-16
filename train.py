@@ -1,247 +1,262 @@
-# train.py
+from __future__ import annotations
 
 import argparse
-import csv
+import json
+import tomllib
 from pathlib import Path
-from typing import List, Tuple
+from typing import Any
 
-import torch
-import torchaudio
-from torch import nn
-from torch.utils.data import Dataset, DataLoader
-from tqdm.auto import tqdm
-
-from attenuate.model import aTENNuate
-from attenuate.losses import MultiResolutionERBSpectralLoss
+from attenuate.engine import run_training
 
 
-class VoiceBankDemandDataset(Dataset):
-    """
-    Dataset bazat pe un CSV cu coloane:
-        noisy,clean
-    Fiecare rând: calea către wav zgomotos și curat.
-    """
-    def __init__(
-        self,
-        csv_path: str,
-        segment_len: int = 16000 * 2,  # 2 sec default
-        sample_rate: int = 16000,
-    ):
-        super().__init__()
-        self.sample_rate = sample_rate
-        self.segment_len = segment_len
+def _load_config_file(path: str | None) -> dict[str, Any]:
+    if not path:
+        return {}
+    config_path = Path(path)
+    if not config_path.exists():
+        raise FileNotFoundError(config_path)
+    if config_path.suffix.lower() == ".json":
+        return json.loads(config_path.read_text(encoding="utf-8"))
+    return tomllib.loads(config_path.read_text(encoding="utf-8"))
 
-        self.pairs: List[Tuple[Path, Path]] = []
-        with open(csv_path, newline="") as f:
-            reader = csv.DictReader(f)
-            if "noisy" not in reader.fieldnames or "clean" not in reader.fieldnames:
-                raise ValueError("CSV must contain columns: noisy, clean")
-            for row in reader:
-                self.pairs.append((Path(row["noisy"]), Path(row["clean"])))
-        if not self.pairs:
-            raise ValueError(f"No rows found in {csv_path}")
 
-        print(f"[Dataset] Loaded {len(self.pairs)} pairs from {csv_path}")
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train aTENNuate with PESQ-first experiment support.")
+    parser.add_argument("--config", type=str, default=None, help="Optional TOML/JSON config.")
+    parser.add_argument("--train-csv", type=str, default=None, help="CSV with columns noisy,clean.")
+    parser.add_argument("--val-csv", type=str, default=None, help="Validation CSV with columns noisy,clean.")
+    parser.add_argument("--quick-val-csv", type=str, default=None, help="Fast validation CSV with columns noisy,clean.")
+    parser.add_argument("--run-dir", type=str, default=None, help="Run directory.")
+    parser.add_argument("--checkpoint-out", type=str, default=None, help="Best checkpoint output path.")
+    parser.add_argument("--resume", type=str, default=None, help="Resume from last_train_state.pt.")
+    parser.add_argument("--init-checkpoint", type=str, default=None, help="Initialize weights from checkpoint.")
+    parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--num-workers", type=int, default=None)
+    parser.add_argument("--segment-len", type=int, default=None)
+    parser.add_argument("--lr", type=float, default=None)
+    parser.add_argument("--min-lr", type=float, default=None)
+    parser.add_argument("--warmup-ratio", type=float, default=None)
+    parser.add_argument("--weight-decay", type=float, default=None)
+    parser.add_argument("--grad-clip", type=float, default=None)
+    parser.add_argument("--ema-decay", type=float, default=None)
+    parser.add_argument("--eval-every", type=int, default=None)
+    parser.add_argument("--full-val-every", type=int, default=None)
+    parser.add_argument("--early-stop-patience", type=int, default=None)
+    parser.add_argument("--save-top-k", type=int, default=None)
+    parser.add_argument("--max-eval-files", type=int, default=None)
+    parser.add_argument("--sample-rate", type=int, default=None, help="Training/evaluation sample rate.")
+    parser.add_argument("--model-kind", type=str, default=None, help="Model backend: atennuate, mp_senet_lite, mp_senet_micro or percepnet_class.")
+    parser.add_argument("--scheduler-kind", type=str, default=None, help="Scheduler kind: cosine or reduce_on_plateau.")
+    parser.add_argument("--scheduler-factor", type=float, default=None, help="LR reduction factor for adaptive scheduler.")
+    parser.add_argument("--scheduler-patience", type=int, default=None, help="Patience for adaptive LR scheduler.")
+    parser.add_argument("--scheduler-threshold", type=float, default=None, help="Minimum monitored improvement for adaptive scheduler.")
+    parser.add_argument("--scheduler-cooldown", type=int, default=None, help="Cooldown epochs for adaptive scheduler.")
 
-    def __len__(self):
-        return len(self.pairs)
+    parser.add_argument("--wave-beta", type=float, default=None)
+    parser.add_argument("--erb-weight", type=float, default=None)
+    parser.add_argument("--mrstft-weight", type=float, default=None)
+    parser.add_argument("--complex-weight", type=float, default=None)
+    parser.add_argument("--sisdr-weight", type=float, default=None)
+    parser.add_argument("--high-snr-weight", type=float, default=None)
+    parser.add_argument("--high-snr-threshold-db", type=float, default=None)
+    parser.add_argument("--band-emphasis-strength", type=float, default=None)
 
-    def _load_mono(self, path: Path) -> torch.Tensor:
-        # Dacă torchaudio/codec îți face probleme, se poate schimba pe soundfile/librosa.
-        wav, sr = torchaudio.load(path)
-        if wav.shape[0] > 1:
-            wav = wav.mean(dim=0, keepdim=True)
-        if sr != self.sample_rate:
-            wav = torchaudio.functional.resample(wav, sr, self.sample_rate)
-        return wav.squeeze(0)  # (T,)
+    parser.add_argument("--augment", action="store_true", help="Enable training augmentations.")
+    parser.add_argument("--augment-probability", type=float, default=None)
+    parser.add_argument("--augment-max-ops", type=int, default=None)
+    parser.add_argument("--augment-ramp-ratio", type=float, default=None)
 
-    def __getitem__(self, idx: int):
-        noisy_path, clean_path = self.pairs[idx]
-        noisy = self._load_mono(noisy_path)
-        clean = self._load_mono(clean_path)
+    parser.add_argument("--spectral-gate", action="store_true", help="Apply spectral gating before the model.")
+    parser.add_argument("--gate-noise-quantile", type=float, default=None)
+    parser.add_argument("--gate-threshold-scale", type=float, default=None)
+    parser.add_argument("--gate-mask-slope", type=float, default=None)
+    parser.add_argument("--gate-mask-floor", type=float, default=None)
 
-        # Random crop / pad la segment_len
-        T = noisy.shape[-1]
-        seg = self.segment_len
-        if T >= seg:
-            start = torch.randint(0, T - seg + 1, (1,)).item()
-            noisy_seg = noisy[start:start + seg]
-            clean_seg = clean[start:start + seg]
+    parser.add_argument("--stage2-surrogate-checkpoint", type=str, default=None)
+    parser.add_argument("--stage2-surrogate-weight", type=float, default=None)
+    parser.add_argument("--stage2-surrogate-warmup-epochs", type=int, default=None)
+    return parser.parse_args()
+
+
+def _deep_update(base: dict[str, Any], updates: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in updates.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = _deep_update(merged[key], value)
         else:
-            pad = seg - T
-            noisy_seg = torch.nn.functional.pad(noisy, (0, pad))
-            clean_seg = torch.nn.functional.pad(clean, (0, pad))
-
-        return noisy_seg, clean_seg
+            merged[key] = value
+    return merged
 
 
-def train_epoch(
-    model: nn.Module,
-    loader: DataLoader,
-    optimizer: torch.optim.Optimizer,
-    device: str,
-    epoch: int,
-    total_epochs: int,
-    wave_loss_fn: nn.Module,
-    spec_loss_fn: nn.Module,
-) -> float:
-    """
-    Un epoch de train.
+def _cli_updates(args: argparse.Namespace) -> dict[str, Any]:
+    cfg: dict[str, Any] = {
+        "model": {},
+        "objective": {},
+        "augment": {},
+        "frontend": {},
+        "stage2": {},
+        "scheduler": {},
+    }
 
-    Loss total:
-        loss = SmoothL1(enhanced, clean) + λ_spec * ERB/mel spectral loss
+    top_level = {
+        "train_csv": args.train_csv,
+        "val_csv": args.val_csv,
+        "quick_val_csv": args.quick_val_csv,
+        "run_dir": args.run_dir,
+        "checkpoint_out": args.checkpoint_out,
+        "resume": args.resume,
+        "init_checkpoint": args.init_checkpoint,
+        "seed": args.seed,
+        "device": args.device,
+        "sample_rate": args.sample_rate,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "num_workers": args.num_workers,
+        "segment_len": args.segment_len,
+        "lr": args.lr,
+        "min_lr": args.min_lr,
+        "warmup_ratio": args.warmup_ratio,
+        "weight_decay": args.weight_decay,
+        "grad_clip": args.grad_clip,
+        "ema_decay": args.ema_decay,
+        "eval_every": args.eval_every,
+        "full_val_every": args.full_val_every,
+        "early_stop_patience": args.early_stop_patience,
+        "save_top_k": args.save_top_k,
+        "max_eval_files": args.max_eval_files,
+    }
+    for key, value in top_level.items():
+        if value is not None:
+            cfg[key] = value
 
-    unde λ_spec crește liniar de la 0 la 1:
-        λ_spec = epoch / total_epochs
-    """
-    model.train()
-    running_loss = 0.0
-    running_wave = 0.0
-    running_spec = 0.0
-    n = 0
+    if args.model_kind is not None:
+        cfg["model"]["kind"] = args.model_kind
 
-    progress_bar = tqdm(loader, desc=f"Epoch {epoch:03d} [train]", unit="batch")
+    scheduler = {
+        "kind": args.scheduler_kind,
+        "factor": args.scheduler_factor,
+        "patience": args.scheduler_patience,
+        "threshold": args.scheduler_threshold,
+        "cooldown": args.scheduler_cooldown,
+    }
+    for key, value in scheduler.items():
+        if value is not None:
+            cfg["scheduler"][key] = value
 
-    lambda_spec = float(epoch) / float(total_epochs)
+    objective = {
+        "wave_beta": args.wave_beta,
+        "erb_weight": args.erb_weight,
+        "mrstft_weight": args.mrstft_weight,
+        "complex_weight": args.complex_weight,
+        "sisdr_weight": args.sisdr_weight,
+        "high_snr_weight": args.high_snr_weight,
+        "high_snr_threshold_db": args.high_snr_threshold_db,
+        "band_emphasis_strength": args.band_emphasis_strength,
+    }
+    for key, value in objective.items():
+        if value is not None:
+            cfg["objective"][key] = value
 
-    for noisy, clean in progress_bar:
-        noisy = noisy.to(device)          # (B, T)
-        clean = clean.to(device)
+    if args.augment:
+        cfg["augment"]["enabled"] = True
+    augment = {
+        "probability": args.augment_probability,
+        "max_ops": args.augment_max_ops,
+        "ramp_ratio": args.augment_ramp_ratio,
+    }
+    for key, value in augment.items():
+        if value is not None:
+            cfg["augment"][key] = value
 
-        noisy = noisy.unsqueeze(1)        # (B, 1, T)
-        clean = clean.unsqueeze(1)
+    if args.spectral_gate:
+        cfg["frontend"]["kind"] = "spectral_gate"
+    frontend = {
+        "noise_quantile": args.gate_noise_quantile,
+        "threshold_scale": args.gate_threshold_scale,
+        "mask_slope": args.gate_mask_slope,
+        "mask_floor": args.gate_mask_floor,
+    }
+    for key, value in frontend.items():
+        if value is not None:
+            cfg["frontend"][key] = value
 
-        optimizer.zero_grad(set_to_none=True)
+    if args.stage2_surrogate_checkpoint is not None:
+        cfg["stage2"]["enabled"] = True
+        cfg["stage2"]["checkpoint"] = args.stage2_surrogate_checkpoint
+    if args.stage2_surrogate_weight is not None:
+        cfg["stage2"]["weight"] = args.stage2_surrogate_weight
+    if args.stage2_surrogate_warmup_epochs is not None:
+        cfg["stage2"]["warmup_epochs"] = args.stage2_surrogate_warmup_epochs
 
-        out = model(noisy)                # (B, 1, T)
-
-        wave_loss = wave_loss_fn(out, clean)
-        spec_loss = spec_loss_fn(out, clean)
-        loss = wave_loss + lambda_spec * spec_loss
-
-        loss.backward()
-        optimizer.step()
-
-        batch_size = noisy.size(0)
-        running_loss += loss.item() * batch_size
-        running_wave += wave_loss.item() * batch_size
-        running_spec += spec_loss.item() * batch_size
-        n += batch_size
-
-        avg_loss = running_loss / max(1, n)
-        avg_wave = running_wave / max(1, n)
-        avg_spec = running_spec / max(1, n)
-        progress_bar.set_postfix({
-            "loss": f"{avg_loss:.6f}",
-            "wave": f"{avg_wave:.6f}",
-            "spec": f"{avg_spec:.6f}",
-            "λ_spec": f"{lambda_spec:.2f}",
-        })
-
-    return running_loss / max(1, n)
+    return cfg
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--train-csv", required=True,
-                    help="CSV VoiceBank-DEMAND train (coloane: noisy,clean)")
-    ap.add_argument("--epochs", type=int, default=200)
-    ap.add_argument("--batch-size", type=int, default=4)
-    # articolul folosește lr=5e-3; setăm default la 5e-3
-    ap.add_argument("--lr", type=float, default=5e-3)
-    ap.add_argument("--segment-len", type=int, default=16000 * 2)
-    ap.add_argument("--checkpoint-out", type=str, default="checkpoints/atennuate_fp32.pt")
-    ap.add_argument("--num-workers", type=int, default=4,
-                    help="DataLoader num_workers (0 = fără multiprocessing, mai sigur)")
-    # hiperparametri pentru scheduler + early stopping
-    ap.add_argument("--lr-factor", type=float, default=0.5,
-                    help="Factor de reducere LR pentru ReduceLROnPlateau")
-    ap.add_argument("--lr-patience", type=int, default=3,
-                    help="Patience (în epoci) pentru ReduceLROnPlateau")
-    ap.add_argument("--min-lr", type=float, default=1e-6,
-                    help="LR minim pentru ReduceLROnPlateau")
-    ap.add_argument("--early-stop-patience", type=int, default=7,
-                    help="Patience (în epoci) pentru early stopping")
-    args = ap.parse_args()
+def _default_config() -> dict[str, Any]:
+    return {
+        "epochs": 80,
+        "batch_size": 4,
+        "num_workers": 0,
+        "segment_len": 64000,
+        "sample_rate": 16000,
+        "lr": 1e-3,
+        "min_lr": 1e-6,
+        "warmup_ratio": 0.05,
+        "weight_decay": 0.02,
+        "grad_clip": 5.0,
+        "ema_decay": 0.999,
+        "eval_every": 2,
+        "full_val_every": 5,
+        "full_val_on_quick_best": True,
+        "early_stop_patience": 8,
+        "save_top_k": 3,
+        "model": {
+            "kind": "atennuate",
+        },
+        "scheduler": {
+            "kind": "cosine",
+            "factor": 0.5,
+            "patience": 4,
+            "threshold": 0.001,
+            "cooldown": 0,
+        },
+        "objective": {
+            "wave_beta": 0.5,
+            "erb_weight": 1.0,
+            "mrstft_weight": 0.0,
+            "complex_weight": 0.0,
+            "sisdr_weight": 0.0,
+            "high_snr_weight": 0.0,
+            "high_snr_threshold_db": 15.0,
+            "band_emphasis_strength": 0.0,
+        },
+        "augment": {
+            "enabled": False,
+            "probability": 0.75,
+            "max_ops": 2,
+            "ramp_ratio": 0.3,
+        },
+        "frontend": {
+            "kind": "none",
+        },
+        "stage2": {
+            "enabled": False,
+        },
+    }
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
 
-    # Dataset + DataLoader
-    ds = VoiceBankDemandDataset(args.train_csv, segment_len=args.segment_len)
-    dl = DataLoader(
-        ds,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        drop_last=True,
-        pin_memory=(device == "cuda"),
-    )
-    print(f"[DataLoader] Batches per epoch: {len(dl)}")
+def main() -> None:
+    args = _parse_args()
+    config = _default_config()
+    config = _deep_update(config, _load_config_file(args.config))
+    config = _deep_update(config, _cli_updates(args))
 
-    # Model
-    model = aTENNuate().to(device)
+    if not config.get("train_csv"):
+        raise ValueError("--train-csv is required unless provided by --config")
 
-    # Loss functions (SmoothL1 + ERB/mel spectral)
-    wave_loss_fn = nn.SmoothL1Loss(beta=0.5)
-    spec_loss_fn = MultiResolutionERBSpectralLoss(sample_rate=16000)
-
-    # Optimizer + scheduler + early stopping state
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
-        lr=args.lr,
-        weight_decay=0.02,   # ca în articol
-    )
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode="min",
-        factor=args.lr_factor,
-        patience=args.lr_patience,
-        min_lr=args.min_lr,
-    )
-
-    best_loss = float("inf")
-    epochs_no_improve = 0
-    early_stop_patience = args.early_stop_patience
-
-    ckpt_path = Path(args.checkpoint_out)
-    ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-
-    for epoch in range(1, args.epochs + 1):
-        print(f"\n===== Epoch {epoch:03d}/{args.epochs} =====")
-        loss = train_epoch(
-            model,
-            dl,
-            optimizer,
-            device,
-            epoch,
-            args.epochs,
-            wave_loss_fn,
-            spec_loss_fn,
-        )
-        print(f"[Epoch {epoch:03d}] mean train loss={loss:.6f}")
-
-        # scheduler pe baza loss-ului mediu pe epocă
-        scheduler.step(loss)
-
-        # early stopping + best checkpoint
-        if loss < best_loss:
-            best_loss = loss
-            epochs_no_improve = 0
-            torch.save(model.state_dict(), ckpt_path)
-            print(f"  Improved (best loss={best_loss:.6f}); checkpoint saved -> {ckpt_path}")
-        else:
-            epochs_no_improve += 1
-            print(
-                f"  No improvement for {epochs_no_improve} epoch(s). "
-                f"Best loss so far: {best_loss:.6f}"
-            )
-
-        if epochs_no_improve >= early_stop_patience:
-            print("Early stopping triggered.")
-            break
-
-    print("Training finished.")
+    run_training(config)
 
 
 if __name__ == "__main__":

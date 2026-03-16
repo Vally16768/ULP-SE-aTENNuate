@@ -1,0 +1,28 @@
+train_csv = "dataset/voicebank-demand/16k/train.csv"
+val_csv = "dataset/voicebank-demand/16k/val.csv"
+quick_val_csv = ""
+run_dir = "runs/repo_baseline_spectral_gate_ft_full_eval"
+checkpoint_out = "runs/repo_baseline_spectral_gate_ft_full_eval/best.pt"
+init_checkpoint = "runs/pesq_campaign/base/repo_baseline/best.pt"
+device = "cuda"
+sample_rate = 16000
+seed = 1337
+epochs = 30
+batch_size = 4
+num_workers = 0
+segment_len = 32000
+lr = 3.0e-4
+min_lr = 1.0e-6
+warmup_ratio = 0.02
+weight_decay = 0.02
+grad_clip = 0.0
+ema_decay = 0.0
+eval_every = 2
+full_val_every = 2
+full_val_on_quick_best = false
+early_stop_patience = 6
+save_top_k = 3
+
+objective = { wave_beta = 0.5, erb_weight = 1.0, mrstft_weight = 0.0, complex_weight = 0.0, sisdr_weight = 0.0, high_snr_weight = 0.0, high_snr_threshold_db = 15.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false, probability = 0.75, max_ops = 2, ramp_ratio = 0.3 }
+frontend = { kind = "spectral_gate", noise_quantile = 0.15, threshold_scale = 1.25, mask_slope = 10.0, mask_floor = 0.10 }

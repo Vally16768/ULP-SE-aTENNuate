@@ -1,0 +1,31 @@
+train_csv = "audit_data/voicebank-demand-16k/train_smoke/manifest.csv"
+val_csv = "audit_data/voicebank-demand-16k/train_smoke/manifest.csv"
+quick_val_csv = "audit_data/voicebank-demand-16k/train_smoke/manifest.csv"
+run_dir = "runs/mp_senet_lite_smoke"
+checkpoint_out = "runs/mp_senet_lite_smoke/best.pt"
+device = "cpu"
+sample_rate = 16000
+seed = 1337
+epochs = 1
+batch_size = 1
+num_workers = 0
+segment_len = 32000
+lr = 3.0e-4
+min_lr = 1.0e-6
+warmup_ratio = 0.05
+weight_decay = 0.02
+grad_clip = 5.0
+ema_decay = 0.0
+eval_every = 1
+full_val_every = 1
+full_val_on_quick_best = true
+early_stop_patience = 2
+save_top_k = 2
+max_eval_files = 4
+
+model = { kind = "mp_senet_lite", sample_rate = 16000, n_fft = 512, hop_length = 128, win_length = 512, compress_factor = 0.3, base_channels = 24, bottleneck_channels = 48, num_tf_blocks = 1, num_heads = 4, dense_growth = 12, dense_layers = 3 }
+scheduler = { kind = "cosine" }
+objective = { wave_beta = 0.5, erb_weight = 0.35, mrstft_weight = 0.65, complex_weight = 0.10, sisdr_weight = 0.02, high_snr_weight = 0.02, high_snr_threshold_db = 15.0, band_emphasis_strength = 0.0 }
+augment = { enabled = false, probability = 0.75, max_ops = 2, ramp_ratio = 0.3 }
+frontend = { kind = "none" }
+stage2 = { enabled = false }

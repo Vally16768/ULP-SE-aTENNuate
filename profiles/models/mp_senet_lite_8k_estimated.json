@@ -1,0 +1,32 @@
+{
+  "name": "mp_senet_lite_8k_estimated",
+  "family": "mp_senet_lite",
+  "sample_rate": 8000,
+  "frame_len": 8000,
+  "hop_len": 8000,
+  "quality_class": "offline_tf_complex",
+  "quality_tier": "acceptable",
+  "quality_penalty_estimate": "moderate",
+  "streaming_mode": "offline",
+  "causal_ready": false,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 1246608,
+  "weight_bytes_int8": 311652,
+  "runtime_code_bytes": 131072,
+  "activation_peak_bytes": 1048576,
+  "workspace_bytes": 196608,
+  "io_bytes": 32768,
+  "op_buckets_per_second": {
+    "conv_int8": 2800000000,
+    "matmul_attention": 1000000000,
+    "fft_stft": 600000000,
+    "elementwise": 800000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8"
+  ],
+  "notes": "Conservative 8 kHz estimate derived from local 16 kHz profile by reducing TF grid and reconstruction cost.",
+  "sources": [
+    "attenuate/mp_senet_lite.py"
+  ]
+}

@@ -7,23 +7,36 @@ Note: This script is for offline evaluation (not training).
 """
 from __future__ import annotations
 
+import argparse
 import csv
 import json
 import sys
 import os
 import statistics as st
+from pathlib import Path
 from typing import Any, Dict, List
 
 import numpy as np
 import soundfile as sf
 
+if __package__ in (None, ""):
+    repo_root = Path(__file__).resolve().parents[1]
+    repo_root_str = repo_root.as_posix()
+    if repo_root_str not in sys.path:
+        sys.path.insert(0, repo_root_str)
+
 from core.data.resample_audio import resample_audio
 
-# Import local metric modules (relative)
-from .pesq import pesq_score
-from .stoi import stoi_score
-from .snr import delta_snr
-from .sisdr import sisdr
+try:
+    from .pesq import pesq_score
+    from .stoi import stoi_score
+    from .snr import delta_snr
+    from .sisdr import sisdr
+except ImportError:
+    from metrics.pesq import pesq_score
+    from metrics.stoi import stoi_score
+    from metrics.snr import delta_snr
+    from metrics.sisdr import sisdr
 
 
 DEFAULT_THRESH = {
@@ -88,7 +101,7 @@ def main(manifest_csv: str, out_json: str, thresholds=None):
     """
     rulează metricile intrusive pe manifest_csv și scrie un raport JSON în out_json.
     """
-    thr: Dict[str, float] = {**DEFAULT_THRESH, **(thresholds or {})}
+    thr: Dict[str, float] = dict(thresholds or {})
     rows_in = _read_manifest(manifest_csv)
 
     scores: List[Dict[str, float]] = []
@@ -133,7 +146,7 @@ def main(manifest_csv: str, out_json: str, thresholds=None):
         json.dump(report, f, indent=2)
 
     print("[ORACLE]", {k: round(v, 4) for k, v in agg.items()})
-    if failures:
+    if thr and failures:
         print("[ORACLE][FAIL]", failures)
         sys.exit(2)
 

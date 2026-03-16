@@ -1,0 +1,31 @@
+{
+  "name": "atennuate_8k_estimated",
+  "family": "atennuate",
+  "sample_rate": 8000,
+  "frame_len": 8192,
+  "hop_len": 8192,
+  "quality_class": "offline_waveform",
+  "quality_tier": "acceptable",
+  "quality_penalty_estimate": "moderate",
+  "streaming_mode": "offline",
+  "causal_ready": false,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 3379456,
+  "weight_bytes_int8": 844864,
+  "runtime_code_bytes": 98304,
+  "activation_peak_bytes": 98304,
+  "workspace_bytes": 32768,
+  "io_bytes": 32768,
+  "op_buckets_per_second": {
+    "fft_conv": 180000000,
+    "conv_int8": 45000000,
+    "elementwise": 25000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8"
+  ],
+  "notes": "Conservative 8 kHz estimate derived from the 16 kHz local profile by halving temporal load and state sizes.",
+  "sources": [
+    "attenuate/model.py"
+  ]
+}

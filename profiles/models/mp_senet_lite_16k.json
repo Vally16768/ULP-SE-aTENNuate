@@ -1,0 +1,33 @@
+{
+  "name": "mp_senet_lite_16k",
+  "family": "mp_senet_lite",
+  "sample_rate": 16000,
+  "frame_len": 16000,
+  "hop_len": 16000,
+  "quality_class": "offline_tf_complex",
+  "quality_tier": "high",
+  "quality_penalty_estimate": "none",
+  "streaming_mode": "offline",
+  "causal_ready": false,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 1246608,
+  "weight_bytes_int8": 311652,
+  "runtime_code_bytes": 131072,
+  "activation_peak_bytes": 2080512,
+  "workspace_bytes": 393216,
+  "io_bytes": 65536,
+  "op_buckets_per_second": {
+    "conv_int8": 6100000000,
+    "matmul_attention": 2500000000,
+    "fft_stft": 1500000000,
+    "elementwise": 2000000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8"
+  ],
+  "notes": "Measured locally from repo architecture and profiler. Offline complex-STFT model with attention and iSTFT reconstruction.",
+  "sources": [
+    "attenuate/mp_senet_lite.py",
+    "runs/mp_senet_lite_voicebank/summary.json"
+  ]
+}

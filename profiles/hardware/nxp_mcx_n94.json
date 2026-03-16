@@ -1,0 +1,33 @@
+{
+  "name": "NXP MCX N94",
+  "family": "mcx_n94",
+  "category": "mcu_npu",
+  "core": "Dual Arm Cortex-M33 + PowerQuad + Neutron N1-16",
+  "freq_mhz": 150,
+  "sram_bytes": 524288,
+  "flash_bytes": 2097152,
+  "cpu_mac_per_cycle": 1.0,
+  "cpu_efficiency": 0.30,
+  "dsp_mac_per_cycle": 4.0,
+  "dsp_efficiency": 0.55,
+  "active_current_uA_per_MHz": 57.0,
+  "supply_voltage_v": 3.3,
+  "npu_gops": 4.8,
+  "npu_efficiency": 0.65,
+  "npu_power_mw_at_full": 25.0,
+  "npu_supported_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "supports_external_memory": true,
+  "on_chip_only": true,
+  "external_flash_bytes": 33554432,
+  "external_sram_bytes": 0,
+  "external_memory_penalty_factor": 1.10,
+  "external_memory_power_mw": 6.0,
+  "notes": "Up to 2 MB flash and 512 KB SRAM with a small Neutron NPU. Good fit for compact causal models.",
+  "sources": [
+    "https://www.nxp.com/products/MCX-N94X-N54X",
+    "https://www.nxp.com/docs/en/data-sheet/MCXNx4xDS.pdf"
+  ]
+}

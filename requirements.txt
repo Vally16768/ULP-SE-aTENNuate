@@ -1,9 +1,17 @@
+numpy<2
 pathlib
 librosa>=0.10
 einops>=0.7
 opt_einsum>=3.3
 huggingface_hub>=0.23
 soundfile>=0.12
+tqdm>=4.66
+pystoi>=0.4.1
+onnx>=1.16
+onnxruntime>=1.18
+onnxscript>=0.1
+matplotlib>=3.8
+python-docx>=1.1
 
 # PyTorch + torchaudio (CUDA 12.1)
 torch>=2.3.0

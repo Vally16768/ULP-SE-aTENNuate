@@ -1,0 +1,33 @@
+{
+  "name": "STM32N6",
+  "family": "stm32n6",
+  "category": "mcu_npu",
+  "core": "Arm Cortex-M55 + Neural-ART",
+  "freq_mhz": 800,
+  "sram_bytes": 4404019,
+  "flash_bytes": 0,
+  "cpu_mac_per_cycle": 4.0,
+  "cpu_efficiency": 0.55,
+  "dsp_mac_per_cycle": 4.0,
+  "dsp_efficiency": 0.55,
+  "active_current_uA_per_MHz": 80.0,
+  "supply_voltage_v": 3.3,
+  "npu_gops": 600.0,
+  "npu_efficiency": 0.65,
+  "npu_power_mw_at_full": 80.0,
+  "npu_supported_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "supports_external_memory": true,
+  "on_chip_only": true,
+  "external_flash_bytes": 67108864,
+  "external_sram_bytes": 33554432,
+  "external_memory_penalty_factor": 1.12,
+  "external_memory_power_mw": 10.0,
+  "notes": "Very strong NPU and SRAM, but strict on-chip mode treats STM32N6 as flashless and therefore unsuitable without external boot storage.",
+  "sources": [
+    "https://www.st.com/en/microcontrollers-microprocessors/stm32n6x7.html",
+    "https://www.st.com/en/microcontrollers-microprocessors/stm32n657a0.html"
+  ]
+}

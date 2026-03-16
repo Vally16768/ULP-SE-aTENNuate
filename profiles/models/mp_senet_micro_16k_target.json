@@ -1,0 +1,35 @@
+{
+  "name": "mp_senet_micro_16k_target",
+  "family": "mp_senet_micro",
+  "sample_rate": 16000,
+  "frame_len": 320,
+  "hop_len": 160,
+  "quality_class": "causal_tf_micro",
+  "quality_tier": "acceptable",
+  "quality_penalty_estimate": "small",
+  "streaming_mode": "streaming",
+  "causal_ready": true,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 1081344,
+  "weight_bytes_int8": 270336,
+  "runtime_code_bytes": 98304,
+  "activation_peak_bytes": 196608,
+  "workspace_bytes": 65536,
+  "io_bytes": 8192,
+  "op_buckets_per_second": {
+    "conv_int8": 50000000,
+    "recurrent": 25000000,
+    "fft_stft": 12000000,
+    "frontend_dsp": 8000000,
+    "elementwise": 4000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "notes": "Streaming redesign target inspired by MP-SENet: short-frame STFT, depthwise-separable conv stack, tiny causal recurrent bottleneck, mask-based decoder, noisy-phase reuse. Budgeted for MCU+NPU deployment rather than maximal PESQ.",
+  "sources": [
+    "attenuate/mp_senet_lite.py",
+    "reports/mcu_porting_target.md"
+  ]
+}

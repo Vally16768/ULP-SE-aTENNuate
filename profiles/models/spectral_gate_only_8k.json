@@ -1,0 +1,29 @@
+{
+  "name": "spectral_gate_only_8k",
+  "family": "spectral_gate_only",
+  "sample_rate": 8000,
+  "frame_len": 256,
+  "hop_len": 64,
+  "quality_class": "frontend_only",
+  "quality_tier": "degraded",
+  "quality_penalty_estimate": "moderate",
+  "streaming_mode": "streaming",
+  "causal_ready": true,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 0,
+  "weight_bytes_int8": 0,
+  "runtime_code_bytes": 49152,
+  "activation_peak_bytes": 16384,
+  "workspace_bytes": 8192,
+  "io_bytes": 4096,
+  "op_buckets_per_second": {
+    "fft_stft": 5000000,
+    "frontend_dsp": 3000000,
+    "elementwise": 2000000
+  },
+  "accelerator_friendly_buckets": [],
+  "notes": "Derived narrowband spectral gate profile with reduced spectral resolution and state.",
+  "sources": [
+    "attenuate/audio.py"
+  ]
+}

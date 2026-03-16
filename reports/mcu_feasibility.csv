@@ -1,0 +1,73 @@
+model,family,sample_rate,hardware,hardware_category,verdict,quality_tier,flash_bytes,flash_limit_bytes,sram_peak_bytes,sram_limit_bytes,algorithmic_latency_ms,compute_time_per_hop_ms,real_time_factor,estimated_energy_per_second_mj,unsupported_op_fraction,memory_mode,reasons
+atennuate_16k,atennuate,16000,Alif Ensemble E3,mcu_npu,FAIL,high,943168,5767168,327680,14155776,1024.00,468.35,0.4574,16.3142,0.0000,onchip,"latency,offline_only"
+atennuate_16k,atennuate,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,high,943168,0,327680,4194304,1024.00,474.87,0.4637,24.3969,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+atennuate_16k,atennuate,16000,NXP i.MX RT700,mcu_npu,FAIL,high,943168,0,327680,7864320,1024.00,809.10,0.7901,38.0458,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+atennuate_16k,atennuate,16000,NXP MCX N94,mcu_npu,FAIL,high,943168,2097152,327680,524288,1024.00,2298.89,2.2450,28.9362,0.0000,onchip,"compute,latency,offline_only"
+atennuate_16k,atennuate,16000,STM32L476RG,classic_mcu,FAIL,high,943168,1048576,327680,131072,1024.00,14734.22,14.3889,26.4000,1.0000,onchip,"compute,flash,latency,offline_only,sram"
+atennuate_16k,atennuate,16000,STM32N6,mcu_npu,FAIL,high,943168,0,327680,4404019,1024.00,234.13,0.2286,48.2585,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+atennuate_8k_estimated,atennuate,8000,Alif Ensemble E3,mcu_npu,FAIL,acceptable,943168,5767168,163840,14155776,1024.00,238.83,0.2332,8.3191,0.0000,onchip,"latency,offline_only"
+atennuate_8k_estimated,atennuate,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,943168,0,163840,4194304,1024.00,242.09,0.2364,12.4385,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+atennuate_8k_estimated,atennuate,8000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,943168,0,163840,7864320,1024.00,400.32,0.3909,18.8236,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+atennuate_8k_estimated,atennuate,8000,NXP MCX N94,mcu_npu,FAIL,acceptable,943168,2097152,163840,524288,1024.00,1142.20,1.1154,28.5756,0.0000,onchip,"compute,latency,offline_only"
+atennuate_8k_estimated,atennuate,8000,STM32L476RG,classic_mcu,FAIL,acceptable,943168,1048576,163840,131072,1024.00,7466.67,7.2917,26.4000,1.0000,onchip,"compute,flash,latency,offline_only,sram"
+atennuate_8k_estimated,atennuate,8000,STM32N6,mcu_npu,FAIL,acceptable,943168,0,163840,4404019,1024.00,119.39,0.1166,24.6092,0.0000,onchip,"flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_16k,mp_senet_lite,16000,Alif Ensemble E3,mcu_npu,FAIL,high,442724,5767168,2539264,14155776,1000.00,6855.72,6.8557,37.8923,0.2066,onchip,"compute,latency,offline_only"
+mp_senet_lite_16k,mp_senet_lite,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,high,442724,0,2539264,4194304,1000.00,7287.41,7.2874,71.5692,0.2066,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_16k,mp_senet_lite,16000,NXP i.MX RT700,mcu_npu,FAIL,high,442724,0,2539264,7864320,1000.00,41410.22,41.4102,64.0539,0.2066,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_16k,mp_senet_lite,16000,NXP MCX N94,mcu_npu,FAIL,high,442724,2097152,2539264,524288,1000.00,106500.58,106.5006,53.2150,0.2066,onchip,"compute,latency,offline_only,sram"
+mp_senet_lite_16k,mp_senet_lite,16000,STM32L476RG,classic_mcu,FAIL,high,442724,1048576,2539264,131072,1000.00,398611.11,398.6111,26.4000,1.0000,onchip,"compute,latency,offline_only,sram"
+mp_senet_lite_16k,mp_senet_lite,16000,STM32N6,mcu_npu,FAIL,high,442724,0,2539264,4404019,1000.00,3424.73,3.4247,212.4513,0.2066,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,Alif Ensemble E3,mcu_npu,FAIL,acceptable,442724,5767168,1277952,14155776,1000.00,2744.50,2.7445,36.6738,0.1923,onchip,"compute,latency,offline_only"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,442724,0,1277952,4194304,1000.00,2942.66,2.9427,61.4154,0.1923,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,442724,0,1277952,7864320,1000.00,16590.72,16.5907,55.5110,0.1923,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,NXP MCX N94,mcu_npu,FAIL,acceptable,442724,2097152,1277952,524288,1000.00,42715.62,42.7156,50.6509,0.1923,onchip,"compute,latency,offline_only,sram"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,STM32L476RG,classic_mcu,FAIL,acceptable,442724,1048576,1277952,131072,1000.00,169444.44,169.4444,26.4000,1.0000,onchip,"compute,latency,offline_only,sram"
+mp_senet_lite_8k_estimated,mp_senet_lite,8000,STM32N6,mcu_npu,FAIL,acceptable,442724,0,1277952,4404019,1000.00,1370.82,1.3708,211.7744,0.1923,onchip,"compute,flash,flashless_onchip,latency,offline_only"
+mp_senet_micro_16k_target,mp_senet_micro,16000,Alif Ensemble E3,mcu_npu,PASS,acceptable,368640,5767168,270336,14155776,20.00,0.28,0.0277,0.9997,0.0000,onchip,
+mp_senet_micro_16k_target,mp_senet_micro,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,368640,0,270336,4194304,20.00,0.33,0.0330,1.6708,0.0000,onchip,"flash,flashless_onchip"
+mp_senet_micro_16k_target,mp_senet_micro,16000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,368640,0,270336,7864320,20.00,0.59,0.0594,2.7913,0.0000,onchip,"flash,flashless_onchip"
+mp_senet_micro_16k_target,mp_senet_micro,16000,NXP MCX N94,mcu_npu,PASS,acceptable,368640,2097152,270336,524288,20.00,1.74,0.1735,4.8190,0.0000,onchip,
+mp_senet_micro_16k_target,mp_senet_micro,16000,STM32L476RG,classic_mcu,FAIL,acceptable,368640,1048576,270336,131072,20.00,28.06,2.8056,26.4000,1.0000,onchip,"compute,sram"
+mp_senet_micro_16k_target,mp_senet_micro,16000,STM32N6,mcu_npu,FAIL,acceptable,368640,0,270336,4404019,20.00,0.14,0.0138,2.8954,0.0000,onchip,"flash,flashless_onchip"
+mp_senet_micro_8k_target,mp_senet_micro,8000,Alif Ensemble E3,mcu_npu,PASS,acceptable,278528,5767168,184320,14155776,20.00,0.13,0.0133,0.4805,0.0000,onchip,
+mp_senet_micro_8k_target,mp_senet_micro,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,278528,0,184320,4194304,20.00,0.16,0.0161,0.8131,0.0000,onchip,"flash,flashless_onchip"
+mp_senet_micro_8k_target,mp_senet_micro,8000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,278528,0,184320,7864320,20.00,0.33,0.0333,1.5693,0.0000,onchip,"flash,flashless_onchip"
+mp_senet_micro_8k_target,mp_senet_micro,8000,NXP MCX N94,mcu_npu,PASS,acceptable,278528,2097152,184320,524288,20.00,0.96,0.0956,2.6575,0.0000,onchip,
+mp_senet_micro_8k_target,mp_senet_micro,8000,STM32L476RG,classic_mcu,FAIL,acceptable,278528,1048576,184320,131072,20.00,14.65,1.4653,26.4000,1.0000,onchip,"compute,sram"
+mp_senet_micro_8k_target,mp_senet_micro,8000,STM32N6,mcu_npu,FAIL,acceptable,278528,0,184320,4404019,20.00,0.07,0.0066,1.3882,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_16k,percepnet_class,16000,Alif Ensemble E3,mcu_npu,PASS,high,323584,5767168,204800,14155776,20.00,0.35,0.0349,1.2630,0.0000,onchip,
+percepnet_class_16k,percepnet_class,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,high,323584,0,204800,4194304,20.00,0.44,0.0441,2.2000,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_16k,percepnet_class,16000,NXP i.MX RT700,mcu_npu,FAIL,high,323584,0,204800,7864320,20.00,1.95,0.1948,9.2723,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_16k,percepnet_class,16000,NXP MCX N94,mcu_npu,PASS,high,323584,2097152,204800,524288,20.00,5.16,0.5164,14.4367,0.0000,onchip,
+percepnet_class_16k,percepnet_class,16000,STM32L476RG,classic_mcu,FAIL,high,323584,1048576,204800,131072,20.00,47.22,4.7222,26.4000,1.0000,onchip,"compute,sram"
+percepnet_class_16k,percepnet_class,16000,STM32N6,mcu_npu,FAIL,high,323584,0,204800,4404019,20.00,0.17,0.0174,3.6267,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_8k,percepnet_class,8000,Alif Ensemble E3,mcu_npu,PASS,acceptable,282624,5767168,102400,14155776,20.00,0.17,0.0174,0.6315,0.0000,onchip,
+percepnet_class_8k,percepnet_class,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,282624,0,102400,4194304,20.00,0.22,0.0220,1.1000,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_8k,percepnet_class,8000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,282624,0,102400,7864320,20.00,0.97,0.0974,4.6361,0.0000,onchip,"flash,flashless_onchip"
+percepnet_class_8k,percepnet_class,8000,NXP MCX N94,mcu_npu,PASS,acceptable,282624,2097152,102400,524288,20.00,2.58,0.2582,7.2183,0.0000,onchip,
+percepnet_class_8k,percepnet_class,8000,STM32L476RG,classic_mcu,FAIL,acceptable,282624,1048576,102400,131072,20.00,23.61,2.3611,26.4000,1.0000,onchip,"compute,sram"
+percepnet_class_8k,percepnet_class,8000,STM32N6,mcu_npu,FAIL,acceptable,282624,0,102400,4404019,20.00,0.09,0.0087,1.8133,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_16k,rnnoise_class,16000,Alif Ensemble E3,mcu_npu,PASS,acceptable,163840,5767168,69632,14155776,20.00,0.18,0.0185,0.6665,0.0000,onchip,
+rnnoise_class_16k,rnnoise_class,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,163840,0,69632,4194304,20.00,0.22,0.0220,1.1138,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_16k,rnnoise_class,16000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,163840,0,69632,7864320,20.00,0.97,0.0972,4.6423,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_16k,rnnoise_class,16000,NXP MCX N94,mcu_npu,PASS,acceptable,163840,2097152,69632,524288,20.00,2.56,0.2564,7.1836,0.0000,onchip,
+rnnoise_class_16k,rnnoise_class,16000,STM32L476RG,classic_mcu,FAIL,acceptable,163840,1048576,69632,131072,20.00,19.72,1.9722,26.4000,1.0000,onchip,compute
+rnnoise_class_16k,rnnoise_class,16000,STM32N6,mcu_npu,FAIL,acceptable,163840,0,69632,4404019,20.00,0.09,0.0092,1.9303,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_8k,rnnoise_class,8000,Alif Ensemble E3,mcu_npu,PASS,degraded,147456,5767168,36864,14155776,20.00,0.09,0.0092,0.3332,0.0000,onchip,
+rnnoise_class_8k,rnnoise_class,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,degraded,147456,0,36864,4194304,20.00,0.11,0.0110,0.5569,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_8k,rnnoise_class,8000,NXP i.MX RT700,mcu_npu,FAIL,degraded,147456,0,36864,7864320,20.00,0.49,0.0486,2.3211,0.0000,onchip,"flash,flashless_onchip"
+rnnoise_class_8k,rnnoise_class,8000,NXP MCX N94,mcu_npu,PASS,degraded,147456,2097152,36864,524288,20.00,1.28,0.1282,3.5918,0.0000,onchip,
+rnnoise_class_8k,rnnoise_class,8000,STM32L476RG,classic_mcu,PASS,degraded,147456,1048576,36864,131072,20.00,9.86,0.9861,26.0333,1.0000,onchip,
+rnnoise_class_8k,rnnoise_class,8000,STM32N6,mcu_npu,FAIL,degraded,147456,0,36864,4404019,20.00,0.05,0.0046,0.9651,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_16k,spectral_gate_only,16000,Alif Ensemble E3,mcu_npu,PASS,acceptable,49152,5767168,57344,14155776,32.00,0.18,0.0227,0.8100,0.0000,onchip,
+spectral_gate_only_16k,spectral_gate_only,16000,Infineon PSoC Edge E84,mcu_npu,FAIL,acceptable,49152,0,57344,4194304,32.00,0.18,0.0227,1.2000,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_16k,spectral_gate_only,16000,NXP i.MX RT700,mcu_npu,FAIL,acceptable,49152,0,57344,7864320,32.00,0.40,0.0501,2.4171,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_16k,spectral_gate_only,16000,NXP MCX N94,mcu_npu,PASS,acceptable,49152,2097152,57344,524288,32.00,1.10,0.1374,3.8760,0.0000,onchip,
+spectral_gate_only_16k,spectral_gate_only,16000,STM32L476RG,classic_mcu,PASS,acceptable,49152,1048576,57344,131072,32.00,4.89,0.6111,16.1333,1.0000,onchip,
+spectral_gate_only_16k,spectral_gate_only,16000,STM32N6,mcu_npu,FAIL,acceptable,49152,0,57344,4404019,32.00,0.09,0.0114,2.4000,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_8k,spectral_gate_only,8000,Alif Ensemble E3,mcu_npu,PASS,degraded,49152,5767168,28672,14155776,32.00,0.09,0.0114,0.4050,0.0000,onchip,
+spectral_gate_only_8k,spectral_gate_only,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,degraded,49152,0,28672,4194304,32.00,0.09,0.0114,0.6000,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_8k,spectral_gate_only,8000,NXP i.MX RT700,mcu_npu,FAIL,degraded,49152,0,28672,7864320,32.00,0.20,0.0250,1.2086,0.0000,onchip,"flash,flashless_onchip"
+spectral_gate_only_8k,spectral_gate_only,8000,NXP MCX N94,mcu_npu,PASS,degraded,49152,2097152,28672,524288,32.00,0.55,0.0687,1.9380,0.0000,onchip,
+spectral_gate_only_8k,spectral_gate_only,8000,STM32L476RG,classic_mcu,PASS,degraded,49152,1048576,28672,131072,32.00,2.44,0.3056,8.0667,1.0000,onchip,
+spectral_gate_only_8k,spectral_gate_only,8000,STM32N6,mcu_npu,FAIL,degraded,49152,0,28672,4404019,32.00,0.05,0.0057,1.2000,0.0000,onchip,"flash,flashless_onchip"

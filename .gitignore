@@ -1,10 +1,68 @@
-dataset
-.venv
-__pycache__
-*.egg-info
+dataset/
+
+# Virtual environments
+.venv/
+.venv*/
+venv/
+env/
+
+# Python caches / artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.ipynb_checkpoints/
 *.ipynb
+
+# Build / packaging
+build/
+dist/
+
+# Local IDE / OS files
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Project-generated artifacts
+checkpoints/
+checkpoints_quantized/
+onnx_exports/
+ts_exports/
+eval_outputs/
+denoised_samples/
+clean_samples/
+
+# Legacy local patterns
 test*
 upload*
-build
-dist
-eval_outputs/
+
+# Training / audit artifacts
+audit_data/
+audit_outputs/
+runs/
+wandb/
+lightning_logs/
+mlruns/
+tensorboard/
+
+# Local build caches
+pesq/_build/
+*.log
+
+# Local configuration files
+.env
+.env.*
+*.env
+*.local
+*.override
+*.override.*
+*.user
+config.local.*
+config/*.local.*
+configs/*.local.*

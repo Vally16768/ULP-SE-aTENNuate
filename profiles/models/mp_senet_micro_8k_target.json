@@ -1,0 +1,35 @@
+{
+  "name": "mp_senet_micro_8k_target",
+  "family": "mp_senet_micro",
+  "sample_rate": 8000,
+  "frame_len": 160,
+  "hop_len": 80,
+  "quality_class": "causal_tf_micro",
+  "quality_tier": "acceptable",
+  "quality_penalty_estimate": "moderate",
+  "streaming_mode": "streaming",
+  "causal_ready": true,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 786432,
+  "weight_bytes_int8": 196608,
+  "runtime_code_bytes": 81920,
+  "activation_peak_bytes": 131072,
+  "workspace_bytes": 49152,
+  "io_bytes": 4096,
+  "op_buckets_per_second": {
+    "conv_int8": 25000000,
+    "recurrent": 15000000,
+    "fft_stft": 6000000,
+    "frontend_dsp": 3000000,
+    "elementwise": 2500000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "notes": "Narrowband streaming redesign target for low-power deployment. Same causal TF-lite structure as the 16 kHz target with reduced channel count and STFT cost.",
+  "sources": [
+    "attenuate/mp_senet_lite.py",
+    "reports/mcu_porting_target.md"
+  ]
+}

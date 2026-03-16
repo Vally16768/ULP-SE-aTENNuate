@@ -1,0 +1,32 @@
+{
+  "name": "atennuate_16k",
+  "family": "atennuate",
+  "sample_rate": 16000,
+  "frame_len": 16384,
+  "hop_len": 16384,
+  "quality_class": "offline_waveform",
+  "quality_tier": "high",
+  "quality_penalty_estimate": "none",
+  "streaming_mode": "offline",
+  "causal_ready": false,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 3379456,
+  "weight_bytes_int8": 844864,
+  "runtime_code_bytes": 98304,
+  "activation_peak_bytes": 196608,
+  "workspace_bytes": 65536,
+  "io_bytes": 65536,
+  "op_buckets_per_second": {
+    "fft_conv": 350000000,
+    "conv_int8": 90000000,
+    "elementwise": 52000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8"
+  ],
+  "notes": "Measured locally from repo architecture and profiler. Offline waveform denoiser with FFT-based SSM kernels.",
+  "sources": [
+    "attenuate/model.py",
+    "runs/mp_senet_lite_voicebank/summary.json"
+  ]
+}

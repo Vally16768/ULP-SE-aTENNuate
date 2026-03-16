@@ -3,7 +3,8 @@ from pathlib import Path
 
 import torch
 
-from attenuate.model import aTENNuate
+from attenuate.checkpoints import load_model_config_file, load_state_dict_file, save_checkpoint_file
+from attenuate.model import build_model
 
 
 def quantize_uniform_state_dict(state_dict, num_bits: int):
@@ -60,20 +61,21 @@ def main():
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    base_state = torch.load(base_ckpt, map_location="cpu")
+    model_cfg = load_model_config_file(base_ckpt, fallback={"kind": "atennuate"})
+    base_state = load_state_dict_file(base_ckpt, map_location="cpu")
 
     for b in args.bits:
         print(f"Quantizing to {b} bits...")
         sd_q = quantize_uniform_state_dict(base_state, b)
 
         # validare rapidă: putem încărca într-un model
-        model = aTENNuate()
+        model = build_model(model_cfg)
         missing, unexpected = model.load_state_dict(sd_q, strict=False)
         if missing or unexpected:
             print(f"  [WARN] missing={missing}, unexpected={unexpected}")
 
         out_path = out_dir / f"atennuate_{b}bit.pt"
-        torch.save(sd_q, out_path)
+        save_checkpoint_file(out_path, sd_q, model_config=model_cfg)
         print(f"  Saved -> {out_path}")
 
     print("Done.")

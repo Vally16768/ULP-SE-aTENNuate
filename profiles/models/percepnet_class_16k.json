@@ -1,0 +1,34 @@
+{
+  "name": "percepnet_class_16k",
+  "family": "percepnet_class",
+  "sample_rate": 16000,
+  "frame_len": 320,
+  "hop_len": 160,
+  "quality_class": "causal_hybrid",
+  "quality_tier": "high",
+  "quality_penalty_estimate": "none",
+  "streaming_mode": "streaming",
+  "causal_ready": true,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 901120,
+  "weight_bytes_int8": 225280,
+  "runtime_code_bytes": 98304,
+  "activation_peak_bytes": 131072,
+  "workspace_bytes": 65536,
+  "io_bytes": 8192,
+  "op_buckets_per_second": {
+    "recurrent": 90000000,
+    "conv_int8": 40000000,
+    "frontend_dsp": 10000000,
+    "elementwise": 20000000
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8",
+    "recurrent"
+  ],
+  "notes": "Reference low-power perceptual denoiser family approximating PercepNet/PercepNet+ deployment cost at 16 kHz.",
+  "sources": [
+    "https://www.isca-archive.org/interspeech_2020/valin20_interspeech.pdf",
+    "https://www.isca-archive.org/interspeech_2022/ge22_interspeech.html"
+  ]
+}

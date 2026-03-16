@@ -1,0 +1,31 @@
+{
+  "name": "rnnoise_class_16k",
+  "family": "rnnoise_class",
+  "sample_rate": 16000,
+  "frame_len": 320,
+  "hop_len": 160,
+  "quality_class": "tiny_rnn",
+  "quality_tier": "acceptable",
+  "quality_penalty_estimate": "none",
+  "streaming_mode": "streaming",
+  "causal_ready": true,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 393216,
+  "weight_bytes_int8": 98304,
+  "runtime_code_bytes": 65536,
+  "activation_peak_bytes": 49152,
+  "workspace_bytes": 16384,
+  "io_bytes": 4096,
+  "op_buckets_per_second": {
+    "recurrent": 50000000,
+    "frontend_dsp": 6000000,
+    "elementwise": 10000000
+  },
+  "accelerator_friendly_buckets": [
+    "recurrent"
+  ],
+  "notes": "Reference low-power recurrent denoiser family approximating RNNoise-style deployment costs at 16 kHz.",
+  "sources": [
+    "https://github.com/xiph/rnnoise"
+  ]
+}
