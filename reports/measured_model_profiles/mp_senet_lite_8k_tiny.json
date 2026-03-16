@@ -1,0 +1,33 @@
+{
+    "name":  "mp_senet_lite_8k_tiny",
+    "family":  "mp_senet_lite",
+    "sample_rate":  8000,
+    "frame_len":  8064,
+    "hop_len":  128,
+    "quality_class":  "offline_tf",
+    "quality_tier":  "degraded",
+    "quality_penalty_estimate":  "large",
+    "streaming_mode":  "offline",
+    "causal_ready":  false,
+    "supports_block_inference":  true,
+    "weight_bytes_fp32":  99600,
+    "weight_bytes_int8":  24900,
+    "runtime_code_bytes":  131072,
+    "activation_peak_bytes":  528384,
+    "workspace_bytes":  1585152,
+    "io_bytes":  32256,
+    "op_buckets_per_second":  {
+                                  "conv_int8":  143792761.9047619,
+                                  "elementwise":  1510603.1746031747,
+                                  "fft_stft":  1259682.5396825396
+                              },
+    "accelerator_friendly_buckets":  [
+                                         "conv_int8"
+                                     ],
+    "notes":  "Measured from trained checkpoint using dummy inference on 1.008s of audio. Test delta_PESQ=0.3521",
+    "sources":  [
+                    "runs/model_to_mcu/mp_senet_lite_8k_tiny/best.pt",
+                    "runs/model_to_mcu/mp_senet_lite_8k_tiny/test_eval.json",
+                    "runs/model_to_mcu/mp_senet_lite_8k_tiny/profile_raw.json"
+                ]
+}

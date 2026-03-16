@@ -1,0 +1,33 @@
+{
+    "name":  "atennuate_16k",
+    "family":  "atennuate",
+    "sample_rate":  16000,
+    "frame_len":  16128,
+    "hop_len":  16128,
+    "quality_class":  "offline_waveform",
+    "quality_tier":  "degraded",
+    "quality_penalty_estimate":  "none",
+    "streaming_mode":  "offline",
+    "causal_ready":  false,
+    "supports_block_inference":  true,
+    "weight_bytes_fp32":  3379456,
+    "weight_bytes_int8":  844864,
+    "runtime_code_bytes":  98304,
+    "activation_peak_bytes":  258048,
+    "workspace_bytes":  516096,
+    "io_bytes":  64512,
+    "op_buckets_per_second":  {
+                                  "fft_conv":  1357375275.4398315,
+                                  "elementwise":  784000.0,
+                                  "conv_int8":  49488000.0
+                              },
+    "accelerator_friendly_buckets":  [
+                                         "conv_int8"
+                                     ],
+    "notes":  "Measured from trained checkpoint using dummy inference on 1.008s of audio. Test delta_PESQ=0.3841",
+    "sources":  [
+                    "C:/Users/E1554695/Desktop/projects/ULP-SE-aTENNuate/runs/pesq_campaign/base/repo_baseline/best.pt",
+                    "runs/pesq_campaign/base/repo_baseline/test_eval.json",
+                    "runs/pesq_campaign/base/repo_baseline/profile_raw.json"
+                ]
+}

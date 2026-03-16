@@ -1,0 +1,109 @@
+{
+  "current_16k": {
+    "name": "mp_senet_lite_16k",
+    "family": "mp_senet_lite",
+    "sample_rate": 16000,
+    "frame_len": 16000,
+    "hop_len": 128,
+    "streaming_mode": "offline",
+    "causal_ready": false,
+    "supports_block_inference": true,
+    "num_params": 311652,
+    "weight_bytes_fp32": 1246608,
+    "weight_bytes_int8": 311652,
+    "runtime_code_bytes": 131072,
+    "activation_peak_bytes": 8322048,
+    "workspace_bytes": 16644096,
+    "io_bytes": 64000,
+    "op_buckets_per_second": {
+      "conv_int8": 5115083904.0,
+      "elementwise": 27006336.0,
+      "matmul_attention": 2126283264.0,
+      "fft_stft": 5621760.0
+    },
+    "accelerator_friendly_buckets": [
+      "conv_int8",
+      "matmul_attention"
+    ],
+    "mac_per_second": 7273995264.0,
+    "mac_per_hop": 58191962.112,
+    "algorithmic_latency_ms": 1000.0,
+    "profile_seconds": 1.0,
+    "notes": "Measured from trained checkpoint using dummy inference on 1.000s of audio.",
+    "checkpoint": "C:/Users/E1554695/Desktop/projects/ULP-SE-aTENNuate/runs/mp_senet_lite_voicebank/best.pt",
+    "model_config": {
+      "kind": "mp_senet_lite",
+      "sample_rate": 16000,
+      "n_fft": 512,
+      "hop_length": 128,
+      "win_length": 512,
+      "compress_factor": 0.3,
+      "base_channels": 32,
+      "bottleneck_channels": 64,
+      "num_tf_blocks": 2,
+      "num_heads": 4,
+      "dense_growth": 16,
+      "dense_layers": 4
+    }
+  },
+  "tiny_8k": {
+    "name": "mp_senet_lite_8k_tiny_estimated",
+    "family": "mp_senet_lite",
+    "sample_rate": 8000,
+    "frame_len": 8064,
+    "hop_len": 128,
+    "quality_class": "offline_tf_tiny",
+    "quality_tier": "degraded",
+    "quality_penalty_estimate": "high",
+    "streaming_mode": "offline",
+    "causal_ready": false,
+    "supports_block_inference": true,
+    "weight_bytes_fp32": 99600,
+    "weight_bytes_int8": 24900,
+    "runtime_code_bytes": 131072,
+    "activation_peak_bytes": 528384,
+    "workspace_bytes": 1585152,
+    "io_bytes": 32256,
+    "op_buckets_per_second": {
+      "conv_int8": 143792761.9047619,
+      "fft_stft": 1259682.5396825396,
+      "elementwise": 1510603.1746031747
+    },
+    "accelerator_friendly_buckets": [
+      "conv_int8"
+    ],
+    "notes": "Architecture-profiled 8 kHz tiny variant: no TF attention blocks, base_channels=16, bottleneck_channels=24, dense_growth=8, dense_layers=2. Int8 weight size is small, but the model remains offline and block-based.",
+    "sources": [
+      "experiments/model_to_mcu/mp_senet_lite_8k_tiny.toml",
+      "attenuate/mp_senet_lite.py"
+    ]
+  },
+  "runtime_benchmarks": {
+    "mp_senet_lite_16k": {
+      "cpu": {
+        "mean_ms": 156.98700000357348,
+        "median_ms": 156.62069999962114
+      },
+      "cuda": {
+        "mean_ms": 7.384172009769827,
+        "median_ms": 7.348150014877319
+      }
+    },
+    "mp_senet_lite_8k_tiny": {
+      "cpu": {
+        "mean_ms": 15.42370000097435,
+        "median_ms": 15.407900005811825
+      },
+      "cuda": {
+        "mean_ms": 2.5308719917666167,
+        "median_ms": 2.3055500350892544
+      }
+    }
+  },
+  "deltas": {
+    "params_ratio_tiny_vs_16k": 0.07989680797812945,
+    "activation_ratio_tiny_vs_16k": 0.06349206349206349,
+    "workspace_ratio_tiny_vs_16k": 0.09523809523809523,
+    "mac_ratio_tiny_vs_16k": 0.02014890611001745
+  }
+}

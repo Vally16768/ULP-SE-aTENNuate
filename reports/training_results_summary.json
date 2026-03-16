@@ -1,0 +1,80 @@
+{
+  "ranking_basis": "test delta_PESQ",
+  "rows": [
+    {
+      "rank": 1,
+      "model": "mp_senet_lite_16k",
+      "sample_rate_hz": 16000,
+      "best_epoch": 114,
+      "val_pesq": 2.8147280735253752,
+      "val_stoi": 0.8982183204646954,
+      "val_si_sdr": 16.603750792525467,
+      "test_pesq": 3.1107210723809824,
+      "test_stoi": 0.9533144224021892,
+      "test_si_sdr": 19.676307905531267,
+      "delta_pesq": 1.1398252801409043,
+      "stop": "max_epochs"
+    },
+    {
+      "rank": 2,
+      "model": "percepnet_class_16k",
+      "sample_rate_hz": 16000,
+      "best_epoch": 48,
+      "val_pesq": 2.237316321311734,
+      "val_stoi": 0.8663436113611789,
+      "val_si_sdr": 14.072396170623788,
+      "test_pesq": 2.5051522084231514,
+      "test_stoi": 0.9363444177535934,
+      "test_si_sdr": 18.245965978292624,
+      "delta_pesq": 0.5342564161830734,
+      "stop": "manual_stop"
+    },
+    {
+      "rank": 3,
+      "model": "aTENNuate_16k",
+      "sample_rate_hz": 16000,
+      "best_epoch": 78,
+      "val_pesq": 1.9901078829042407,
+      "val_stoi": 0.8618471547981623,
+      "val_si_sdr": 12.647421744595592,
+      "test_pesq": 2.355029505433388,
+      "test_stoi": 0.9244916418148841,
+      "test_si_sdr": 16.224943554101344,
+      "delta_pesq": 0.38413371319331,
+      "stop": "max_epochs"
+    },
+    {
+      "rank": 4,
+      "model": "mp_senet_lite_8k_tiny",
+      "sample_rate_hz": 8000,
+      "best_epoch": 120,
+      "val_pesq": 2.8735516007218993,
+      "val_stoi": 0.8419031682349291,
+      "val_si_sdr": 13.809784500470235,
+      "test_pesq": 3.2997985595059625,
+      "test_stoi": 0.9272336550388582,
+      "test_si_sdr": 18.31534882275819,
+      "delta_pesq": 0.3520905297358059,
+      "stop": "max_epochs"
+    },
+    {
+      "rank": 5,
+      "model": "mp_senet_micro_16k",
+      "sample_rate_hz": 16000,
+      "best_epoch": 118,
+      "val_pesq": 1.8368448092031158,
+      "val_stoi": 0.8471189735142625,
+      "val_si_sdr": 12.80097549069979,
+      "test_pesq": 2.2016699658435526,
+      "test_stoi": 0.9272576411840971,
+      "test_si_sdr": 16.47990461647962,
+      "delta_pesq": 0.23077417360347452,
+      "stop": "max_epochs"
+    }
+  ],
+  "leaders": {
+    "global_normalized_leader": "mp_senet_lite_16k",
+    "best_16k": "mp_senet_lite_16k",
+    "best_8k": "mp_senet_lite_8k_tiny"
+  }
+}

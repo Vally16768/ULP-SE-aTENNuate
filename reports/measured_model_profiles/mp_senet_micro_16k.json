@@ -1,0 +1,32 @@
+{
+    "name":  "mp_senet_micro_16k",
+    "family":  "mp_senet_micro",
+    "sample_rate":  16000,
+    "frame_len":  320,
+    "hop_len":  320,
+    "quality_class":  "causal_waveform_micro",
+    "quality_tier":  "degraded",
+    "quality_penalty_estimate":  "none",
+    "streaming_mode":  "streaming",
+    "causal_ready":  true,
+    "supports_block_inference":  true,
+    "weight_bytes_fp32":  192944,
+    "weight_bytes_int8":  48236,
+    "runtime_code_bytes":  81920,
+    "activation_peak_bytes":  81920,
+    "workspace_bytes":  163840,
+    "io_bytes":  1280,
+    "op_buckets_per_second":  {
+                                  "conv_int8":  748032000.0,
+                                  "elementwise":  23552000.0
+                              },
+    "accelerator_friendly_buckets":  [
+                                         "conv_int8"
+                                     ],
+    "notes":  "Measured from trained checkpoint using dummy inference on 0.020s of audio. Test delta_PESQ=0.2308",
+    "sources":  [
+                    "runs/model_to_mcu/mp_senet_micro_16k/best.pt",
+                    "runs/model_to_mcu/mp_senet_micro_16k/test_eval.json",
+                    "runs/model_to_mcu/mp_senet_micro_16k/profile_raw.json"
+                ]
+}

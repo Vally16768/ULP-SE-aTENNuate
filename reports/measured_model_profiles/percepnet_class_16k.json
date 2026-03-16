@@ -1,0 +1,36 @@
+{
+    "name":  "percepnet_class_16k",
+    "family":  "percepnet_class",
+    "sample_rate":  16000,
+    "frame_len":  320,
+    "hop_len":  160,
+    "quality_class":  "causal_hybrid",
+    "quality_tier":  "acceptable",
+    "quality_penalty_estimate":  "none",
+    "streaming_mode":  "block_streaming",
+    "causal_ready":  false,
+    "supports_block_inference":  true,
+    "weight_bytes_fp32":  720256,
+    "weight_bytes_int8":  180064,
+    "runtime_code_bytes":  98304,
+    "activation_peak_bytes":  1920,
+    "workspace_bytes":  3072,
+    "io_bytes":  1280,
+    "op_buckets_per_second":  {
+                                  "matmul_attention":  1843200.0,
+                                  "elementwise":  14400.0,
+                                  "recurrent":  24883200.0,
+                                  "fft_stft":  2304000.0,
+                                  "frontend_dsp":  822400.0
+                              },
+    "accelerator_friendly_buckets":  [
+                                         "recurrent",
+                                         "matmul_attention"
+                                     ],
+    "notes":  "Measured from trained checkpoint using dummy inference on 0.020s of audio. Test delta_PESQ=0.5343",
+    "sources":  [
+                    "runs/model_to_mcu/percepnet_class_16k/best.pt",
+                    "runs/model_to_mcu/percepnet_class_16k/test_eval.json",
+                    "runs/model_to_mcu/percepnet_class_16k/profile_raw.json"
+                ]
+}

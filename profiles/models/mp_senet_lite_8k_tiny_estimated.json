@@ -1,0 +1,32 @@
+{
+  "name": "mp_senet_lite_8k_tiny_estimated",
+  "family": "mp_senet_lite",
+  "sample_rate": 8000,
+  "frame_len": 8064,
+  "hop_len": 128,
+  "quality_class": "offline_tf_tiny",
+  "quality_tier": "degraded",
+  "quality_penalty_estimate": "high",
+  "streaming_mode": "offline",
+  "causal_ready": false,
+  "supports_block_inference": true,
+  "weight_bytes_fp32": 99600,
+  "weight_bytes_int8": 24900,
+  "runtime_code_bytes": 131072,
+  "activation_peak_bytes": 528384,
+  "workspace_bytes": 1585152,
+  "io_bytes": 32256,
+  "op_buckets_per_second": {
+    "conv_int8": 143792761.9047619,
+    "fft_stft": 1259682.5396825396,
+    "elementwise": 1510603.1746031747
+  },
+  "accelerator_friendly_buckets": [
+    "conv_int8"
+  ],
+  "notes": "Architecture-profiled 8 kHz tiny variant: no TF attention blocks, base_channels=16, bottleneck_channels=24, dense_growth=8, dense_layers=2. Int8 weight size is small, but the model remains offline and block-based.",
+  "sources": [
+    "experiments/model_to_mcu/mp_senet_lite_8k_tiny.toml",
+    "attenuate/mp_senet_lite.py"
+  ]
+}

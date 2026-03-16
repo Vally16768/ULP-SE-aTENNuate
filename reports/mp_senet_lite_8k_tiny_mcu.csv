@@ -1,0 +1,7 @@
+model,family,sample_rate,hardware,hardware_category,verdict,quality_tier,flash_bytes,flash_limit_bytes,sram_peak_bytes,sram_limit_bytes,algorithmic_latency_ms,compute_time_per_hop_ms,real_time_factor,required_mhz,estimated_energy_per_second_mj,unsupported_op_fraction,memory_mode,reasons
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,Alif Ensemble E3,mcu_npu,FAIL,degraded,155972,5767168,2145792,14155776,1008.00,0.06,0.0040,400.00,0.1653,0.0000,onchip,"latency,offline_only"
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,Infineon PSoC Edge E84,mcu_npu,FAIL,degraded,155972,67108864,2145792,4194304,1008.00,0.25,0.0156,400.00,8.6087,0.0000,external,"latency,offline_only"
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,NXP i.MX RT700,mcu_npu,FAIL,degraded,155972,67108864,2145792,7864320,1008.00,0.43,0.0271,325.00,9.0699,0.0000,external,"latency,offline_only"
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,NXP MCX N94,mcu_npu,FAIL,degraded,155972,2097152,2145792,524288,1008.00,1.34,0.0835,150.00,2.2070,0.0000,onchip,"latency,offline_only,sram"
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,STM32L476RG,classic_mcu,FAIL,degraded,155972,1048576,2145792,131072,1008.00,65.47,4.0922,327.37,26.4000,1.0000,onchip,"compute,latency,offline_only,sram"
+mp_senet_lite_8k_tiny_estimated,mp_senet_lite,8000,STM32N6,mcu_npu,FAIL,degraded,155972,67108864,2145792,4404019,1008.00,0.03,0.0022,800.00,10.3619,0.0000,external,"latency,offline_only"

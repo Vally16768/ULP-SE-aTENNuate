@@ -1,0 +1,35 @@
+{
+    "name":  "mp_senet_lite_16k",
+    "family":  "mp_senet_lite",
+    "sample_rate":  16000,
+    "frame_len":  16000,
+    "hop_len":  128,
+    "quality_class":  "offline_tf",
+    "quality_tier":  "high",
+    "quality_penalty_estimate":  "none",
+    "streaming_mode":  "offline",
+    "causal_ready":  false,
+    "supports_block_inference":  true,
+    "weight_bytes_fp32":  1246608,
+    "weight_bytes_int8":  311652,
+    "runtime_code_bytes":  131072,
+    "activation_peak_bytes":  8322048,
+    "workspace_bytes":  16644096,
+    "io_bytes":  64000,
+    "op_buckets_per_second":  {
+                                  "conv_int8":  5115083904.0,
+                                  "elementwise":  27006336.0,
+                                  "matmul_attention":  2126283264.0,
+                                  "fft_stft":  5621760.0
+                              },
+    "accelerator_friendly_buckets":  [
+                                         "conv_int8",
+                                         "matmul_attention"
+                                     ],
+    "notes":  "Measured from trained checkpoint using dummy inference on 1.000s of audio. Test delta_PESQ=1.1398",
+    "sources":  [
+                    "C:/Users/E1554695/Desktop/projects/ULP-SE-aTENNuate/runs/mp_senet_lite_voicebank/best.pt",
+                    "runs/mp_senet_lite_voicebank/test_eval.json",
+                    "runs/mp_senet_lite_voicebank/profile_raw.json"
+                ]
+}
