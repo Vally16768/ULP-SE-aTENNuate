@@ -1,247 +1,168 @@
-# train.py
+from __future__ import annotations
 
 import argparse
-import csv
+import json
 from pathlib import Path
-from typing import List, Tuple
 
-import torch
-import torchaudio
-from torch import nn
-from torch.utils.data import Dataset, DataLoader
-from tqdm.auto import tqdm
-
-from attenuate.model import aTENNuate
-from attenuate.losses import MultiResolutionERBSpectralLoss
+from sebench import MODEL_FAMILIES, MODEL_VARIANTS
+from sebench.mlflow_utils import DEFAULT_ARTIFACT_ROOT, DEFAULT_EXPERIMENT_NAME, DEFAULT_TRACKING_URI
+from sebench.runtime import require_cuda_device
+from sebench.training import ExperimentConfig, run_experiment
 
 
-class VoiceBankDemandDataset(Dataset):
-    """
-    Dataset bazat pe un CSV cu coloane:
-        noisy,clean
-    Fiecare rând: calea către wav zgomotos și curat.
-    """
-    def __init__(
-        self,
-        csv_path: str,
-        segment_len: int = 16000 * 2,  # 2 sec default
-        sample_rate: int = 16000,
-    ):
-        super().__init__()
-        self.sample_rate = sample_rate
-        self.segment_len = segment_len
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Train a speech enhancement model with PESQ-aware validation logging.")
+    parser.add_argument("--train-csv", required=True, help="CSV train split with columns noisy,clean.")
+    parser.add_argument("--val-csv", default=None, help="Backward-compatible alias for --val-rank-csv.")
+    parser.add_argument("--val-rank-csv", default=None, help="Fast validation split used for PESQ ranking.")
+    parser.add_argument("--val-select-csv", default=None, help="Full internal validation split used for model selection.")
+    parser.add_argument("--test-csv", default=None, help="Optional holdout manifest evaluated after training.")
 
-        self.pairs: List[Tuple[Path, Path]] = []
-        with open(csv_path, newline="") as f:
-            reader = csv.DictReader(f)
-            if "noisy" not in reader.fieldnames or "clean" not in reader.fieldnames:
-                raise ValueError("CSV must contain columns: noisy, clean")
-            for row in reader:
-                self.pairs.append((Path(row["noisy"]), Path(row["clean"])))
-        if not self.pairs:
-            raise ValueError(f"No rows found in {csv_path}")
+    parser.add_argument("--model-family", default="atennuate", choices=list(MODEL_FAMILIES))
+    parser.add_argument("--variant", default="base", choices=list(MODEL_VARIANTS))
+    parser.add_argument("--loss-recipe", default="R1", choices=["R1", "R2", "R3", "R4", "R5", "R6", "D1", "D2"])
+    parser.add_argument("--postfilter-mode", default="none", choices=["none", "sg_residual_soft", "sg_input_floor"])
+    parser.add_argument("--postfilter-preset", default="medium", choices=["light", "medium", "aggressive"])
+    parser.add_argument("--train-postfilter", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--spectral-native-gate", action=argparse.BooleanOptionalAction, default=False)
 
-        print(f"[Dataset] Loaded {len(self.pairs)} pairs from {csv_path}")
+    parser.add_argument("--epochs", type=int, default=30)
+    parser.add_argument("--batch-size", type=int, default=None)
+    parser.add_argument("--grad-accum", type=int, default=None)
+    parser.add_argument("--lr", type=float, default=1e-3)
+    parser.add_argument("--segment-len", type=int, default=32000)
+    parser.add_argument("--num-workers", type=int, default=None)
+    parser.add_argument("--scheduler", default="plateau", choices=["plateau", "cosine"])
+    parser.add_argument("--lr-factor", type=float, default=0.5)
+    parser.add_argument("--lr-patience", type=int, default=2)
+    parser.add_argument("--min-lr", type=float, default=1e-6)
+    parser.add_argument("--early-stop-patience", type=int, default=5)
+    parser.add_argument("--min-epochs", type=int, default=10)
+    parser.add_argument("--eval-every", type=int, default=2)
+    parser.add_argument("--grad-clip", type=float, default=5.0)
+    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--amp", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--device", default=None)
+    parser.add_argument("--teacher-source-run-id", default=None)
+    parser.add_argument("--teacher-cache-manifest", default=None)
+    parser.add_argument("--guidance-classic", default="none", choices=["none", "spectral_gating"])
+    parser.add_argument("--erb-bands", type=int, default=32)
+    parser.add_argument("--context-frames", type=int, default=5)
+    parser.add_argument("--qat", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--quantize-dynamic", action=argparse.BooleanOptionalAction, default=False)
+    parser.add_argument("--mcu-profile", default=None)
+    parser.add_argument("--init-checkpoint", default=None)
+    parser.add_argument("--sample-rate", type=int, default=16000)
+    parser.add_argument("--n-fft", type=int, default=512)
+    parser.add_argument("--hop-length", type=int, default=160)
+    parser.add_argument("--win-length", type=int, default=320)
 
-    def __len__(self):
-        return len(self.pairs)
+    parser.add_argument("--checkpoint-out", type=str, default="checkpoints/experiment.pt")
+    parser.add_argument("--run-name", default=None)
+    parser.add_argument("--phase", default=None)
+    parser.add_argument("--selection-metric", default="val_select_pesq_mean")
+    parser.add_argument("--parent-run-id", default=None)
+    parser.add_argument("--mlflow-uri", default=DEFAULT_TRACKING_URI)
+    parser.add_argument("--mlflow-artifact-root", default=DEFAULT_ARTIFACT_ROOT)
+    parser.add_argument("--experiment-name", default=DEFAULT_EXPERIMENT_NAME)
+    parser.add_argument("--log-system-metrics", action="store_true")
+    parser.add_argument("--log-torch-model", action="store_true")
+    parser.add_argument("--sample-count", type=int, default=3)
+    parser.add_argument("--benchmark-seconds", type=int, default=10)
+    parser.add_argument("--benchmark-repeats", type=int, default=3)
+    parser.add_argument("--max-eval-files", type=int, default=None)
+    parser.add_argument("--eval-batch-size", type=int, default=None)
+    parser.add_argument("--cache-eval-audio", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--rank-compute-composite", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--select-compute-composite", action=argparse.BooleanOptionalAction, default=True)
+    parser.add_argument("--no-dnsmos", action="store_true")
 
-    def _load_mono(self, path: Path) -> torch.Tensor:
-        # Dacă torchaudio/codec îți face probleme, se poate schimba pe soundfile/librosa.
-        wav, sr = torchaudio.load(path)
-        if wav.shape[0] > 1:
-            wav = wav.mean(dim=0, keepdim=True)
-        if sr != self.sample_rate:
-            wav = torchaudio.functional.resample(wav, sr, self.sample_rate)
-        return wav.squeeze(0)  # (T,)
-
-    def __getitem__(self, idx: int):
-        noisy_path, clean_path = self.pairs[idx]
-        noisy = self._load_mono(noisy_path)
-        clean = self._load_mono(clean_path)
-
-        # Random crop / pad la segment_len
-        T = noisy.shape[-1]
-        seg = self.segment_len
-        if T >= seg:
-            start = torch.randint(0, T - seg + 1, (1,)).item()
-            noisy_seg = noisy[start:start + seg]
-            clean_seg = clean[start:start + seg]
-        else:
-            pad = seg - T
-            noisy_seg = torch.nn.functional.pad(noisy, (0, pad))
-            clean_seg = torch.nn.functional.pad(clean, (0, pad))
-
-        return noisy_seg, clean_seg
-
-
-def train_epoch(
-    model: nn.Module,
-    loader: DataLoader,
-    optimizer: torch.optim.Optimizer,
-    device: str,
-    epoch: int,
-    total_epochs: int,
-    wave_loss_fn: nn.Module,
-    spec_loss_fn: nn.Module,
-) -> float:
-    """
-    Un epoch de train.
-
-    Loss total:
-        loss = SmoothL1(enhanced, clean) + λ_spec * ERB/mel spectral loss
-
-    unde λ_spec crește liniar de la 0 la 1:
-        λ_spec = epoch / total_epochs
-    """
-    model.train()
-    running_loss = 0.0
-    running_wave = 0.0
-    running_spec = 0.0
-    n = 0
-
-    progress_bar = tqdm(loader, desc=f"Epoch {epoch:03d} [train]", unit="batch")
-
-    lambda_spec = float(epoch) / float(total_epochs)
-
-    for noisy, clean in progress_bar:
-        noisy = noisy.to(device)          # (B, T)
-        clean = clean.to(device)
-
-        noisy = noisy.unsqueeze(1)        # (B, 1, T)
-        clean = clean.unsqueeze(1)
-
-        optimizer.zero_grad(set_to_none=True)
-
-        out = model(noisy)                # (B, 1, T)
-
-        wave_loss = wave_loss_fn(out, clean)
-        spec_loss = spec_loss_fn(out, clean)
-        loss = wave_loss + lambda_spec * spec_loss
-
-        loss.backward()
-        optimizer.step()
-
-        batch_size = noisy.size(0)
-        running_loss += loss.item() * batch_size
-        running_wave += wave_loss.item() * batch_size
-        running_spec += spec_loss.item() * batch_size
-        n += batch_size
-
-        avg_loss = running_loss / max(1, n)
-        avg_wave = running_wave / max(1, n)
-        avg_spec = running_spec / max(1, n)
-        progress_bar.set_postfix({
-            "loss": f"{avg_loss:.6f}",
-            "wave": f"{avg_wave:.6f}",
-            "spec": f"{avg_spec:.6f}",
-            "λ_spec": f"{lambda_spec:.2f}",
-        })
-
-    return running_loss / max(1, n)
+    return parser.parse_args()
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--train-csv", required=True,
-                    help="CSV VoiceBank-DEMAND train (coloane: noisy,clean)")
-    ap.add_argument("--epochs", type=int, default=200)
-    ap.add_argument("--batch-size", type=int, default=4)
-    # articolul folosește lr=5e-3; setăm default la 5e-3
-    ap.add_argument("--lr", type=float, default=5e-3)
-    ap.add_argument("--segment-len", type=int, default=16000 * 2)
-    ap.add_argument("--checkpoint-out", type=str, default="checkpoints/atennuate_fp32.pt")
-    ap.add_argument("--num-workers", type=int, default=4,
-                    help="DataLoader num_workers (0 = fără multiprocessing, mai sigur)")
-    # hiperparametri pentru scheduler + early stopping
-    ap.add_argument("--lr-factor", type=float, default=0.5,
-                    help="Factor de reducere LR pentru ReduceLROnPlateau")
-    ap.add_argument("--lr-patience", type=int, default=3,
-                    help="Patience (în epoci) pentru ReduceLROnPlateau")
-    ap.add_argument("--min-lr", type=float, default=1e-6,
-                    help="LR minim pentru ReduceLROnPlateau")
-    ap.add_argument("--early-stop-patience", type=int, default=7,
-                    help="Patience (în epoci) pentru early stopping")
-    args = ap.parse_args()
+def namespace_to_config(args: argparse.Namespace) -> ExperimentConfig:
+    val_rank_csv = args.val_rank_csv or args.val_csv
+    device = require_cuda_device(args.device)
 
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-
-    # Dataset + DataLoader
-    ds = VoiceBankDemandDataset(args.train_csv, segment_len=args.segment_len)
-    dl = DataLoader(
-        ds,
+    return ExperimentConfig(
+        train_csv=args.train_csv,
+        val_rank_csv=val_rank_csv,
+        val_select_csv=args.val_select_csv,
+        test_csv=args.test_csv,
+        checkpoint_out=args.checkpoint_out,
+        model_family=args.model_family,
+        variant=args.variant,
+        loss_recipe=args.loss_recipe,
+        run_name=args.run_name,
+        phase=args.phase,
+        epochs=args.epochs,
         batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        drop_last=True,
-        pin_memory=(device == "cuda"),
-    )
-    print(f"[DataLoader] Batches per epoch: {len(dl)}")
-
-    # Model
-    model = aTENNuate().to(device)
-
-    # Loss functions (SmoothL1 + ERB/mel spectral)
-    wave_loss_fn = nn.SmoothL1Loss(beta=0.5)
-    spec_loss_fn = MultiResolutionERBSpectralLoss(sample_rate=16000)
-
-    # Optimizer + scheduler + early stopping state
-    optimizer = torch.optim.AdamW(
-        model.parameters(),
+        grad_accum=args.grad_accum,
         lr=args.lr,
-        weight_decay=0.02,   # ca în articol
-    )
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer,
-        mode="min",
-        factor=args.lr_factor,
-        patience=args.lr_patience,
+        segment_len=args.segment_len,
+        num_workers=args.num_workers,
+        scheduler=args.scheduler,
+        lr_factor=args.lr_factor,
+        lr_patience=args.lr_patience,
         min_lr=args.min_lr,
+        early_stop_patience=args.early_stop_patience,
+        min_epochs=args.min_epochs,
+        eval_every=args.eval_every,
+        grad_clip=args.grad_clip,
+        seed=args.seed,
+        amp=args.amp,
+        device=device,
+        selection_metric=args.selection_metric,
+        parent_run_id=args.parent_run_id,
+        mlflow_uri=args.mlflow_uri,
+        mlflow_artifact_root=args.mlflow_artifact_root,
+        experiment_name=args.experiment_name,
+        log_system_metrics=args.log_system_metrics,
+        log_torch_model=args.log_torch_model,
+        sample_count=args.sample_count,
+        benchmark_seconds=args.benchmark_seconds,
+        benchmark_repeats=args.benchmark_repeats,
+        max_eval_files=args.max_eval_files,
+        eval_batch_size=args.eval_batch_size,
+        cache_eval_audio=args.cache_eval_audio,
+        rank_compute_composite=args.rank_compute_composite,
+        select_compute_composite=args.select_compute_composite,
+        eval_dnsmos=(not args.no_dnsmos) and args.sample_rate == 16000,
+        postfilter_mode=args.postfilter_mode,
+        postfilter_preset=args.postfilter_preset,
+        train_postfilter=args.train_postfilter,
+        spectral_native_gate=args.spectral_native_gate,
+        teacher_source_run_id=args.teacher_source_run_id,
+        teacher_variant=None,
+        audit_only=False,
+        teacher_cache_manifest=args.teacher_cache_manifest,
+        guidance_classic=args.guidance_classic,
+        erb_bands=args.erb_bands,
+        context_frames=args.context_frames,
+        qat=args.qat,
+        quantize_dynamic=args.quantize_dynamic,
+        mcu_profile=args.mcu_profile,
+        init_checkpoint=args.init_checkpoint,
+        sample_rate=args.sample_rate,
+        n_fft=args.n_fft,
+        hop_length=args.hop_length,
+        win_length=args.win_length,
     )
 
-    best_loss = float("inf")
-    epochs_no_improve = 0
-    early_stop_patience = args.early_stop_patience
 
-    ckpt_path = Path(args.checkpoint_out)
-    ckpt_path.parent.mkdir(parents=True, exist_ok=True)
-
-    for epoch in range(1, args.epochs + 1):
-        print(f"\n===== Epoch {epoch:03d}/{args.epochs} =====")
-        loss = train_epoch(
-            model,
-            dl,
-            optimizer,
-            device,
-            epoch,
-            args.epochs,
-            wave_loss_fn,
-            spec_loss_fn,
+def main() -> None:
+    args = parse_args()
+    if args.quantize_dynamic:
+        raise ValueError(
+            "--quantize-dynamic is evaluation-only for teacher audit benchmarks. "
+            "Use campaign.py teacher audit phases or evaluate_metrics.py."
         )
-        print(f"[Epoch {epoch:03d}] mean train loss={loss:.6f}")
-
-        # scheduler pe baza loss-ului mediu pe epocă
-        scheduler.step(loss)
-
-        # early stopping + best checkpoint
-        if loss < best_loss:
-            best_loss = loss
-            epochs_no_improve = 0
-            torch.save(model.state_dict(), ckpt_path)
-            print(f"  Improved (best loss={best_loss:.6f}); checkpoint saved -> {ckpt_path}")
-        else:
-            epochs_no_improve += 1
-            print(
-                f"  No improvement for {epochs_no_improve} epoch(s). "
-                f"Best loss so far: {best_loss:.6f}"
-            )
-
-        if epochs_no_improve >= early_stop_patience:
-            print("Early stopping triggered.")
-            break
-
-    print("Training finished.")
+    config = namespace_to_config(args)
+    summary = run_experiment(config)
+    print(json.dumps(summary, indent=2, sort_keys=True))
+    checkpoint_path = Path(config.checkpoint_out)
+    if checkpoint_path.exists():
+        print(f"checkpoint: {checkpoint_path}")
 
 
 if __name__ == "__main__":

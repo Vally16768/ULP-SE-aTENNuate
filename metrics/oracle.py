@@ -12,6 +12,7 @@ import json
 import sys
 import os
 import statistics as st
+import argparse
 from typing import Any, Dict, List
 
 import numpy as np
@@ -20,6 +21,7 @@ import soundfile as sf
 from core.data.resample_audio import resample_audio
 
 # Import local metric modules (relative)
+from .composite import composite_scores
 from .pesq import pesq_score
 from .stoi import stoi_score
 from .snr import delta_snr
@@ -63,12 +65,16 @@ def eval_pair(clean_path: str, noisy_path: str, enhanced_path: str) -> Dict[str,
     stoi = stoi_score(clean3, enh2, fs_use, extended=False)
     dsnr = delta_snr(clean3, noisy2, enh2)
     sdr = sisdr(clean3, enh2)
+    composite = composite_scores(clean3, enh2, fs_use, pesq_value=pesq)
 
     return {
         "PESQ": float(pesq),
         "STOI": float(stoi),
         "DELTA_SNR": float(dsnr),
         "SI_SDR": float(sdr),
+        "CSIG": float(composite["csig"]),
+        "CBAK": float(composite["cbak"]),
+        "COVL": float(composite["covl"]),
     }
 
 

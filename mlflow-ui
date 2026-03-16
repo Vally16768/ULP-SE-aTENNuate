@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+ENV_FILE="${ROOT_DIR}/mlflow.local.env"
+
+if [[ -f "${ENV_FILE}" ]]; then
+  # shellcheck disable=SC1090
+  source "${ENV_FILE}"
+fi
+
+mkdir -p "${ROOT_DIR}/mlflow" "${ROOT_DIR}/mlruns"
+
+export MLFLOW_TRACKING_URI="${MLFLOW_TRACKING_URI:-sqlite:////home/vali/Desktop/ULP-SE-aTENNuate/mlflow/mlflow.db}"
+
+MLFLOW_BIN="${ROOT_DIR}/.venv/bin/mlflow"
+if [[ ! -x "${MLFLOW_BIN}" ]]; then
+  MLFLOW_BIN="mlflow"
+fi
+
+exec "${MLFLOW_BIN}" ui \
+  --backend-store-uri "${MLFLOW_BACKEND_STORE_URI:-sqlite:////home/vali/Desktop/ULP-SE-aTENNuate/mlflow/mlflow.db}" \
+  --host "${MLFLOW_UI_HOST:-127.0.0.1}" \
+  --port "${MLFLOW_UI_PORT:-5000}"
