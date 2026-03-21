@@ -87,6 +87,7 @@ def main() -> None:
     parser.add_argument("--mlflow-run-id", default=None)
     parser.add_argument("--metric-prefix", default="eval")
     parser.add_argument("--device", default="cuda")
+    # DNSMOS metrics sunt obligatorii și nu pot fi oprite.
     args = parser.parse_args()
     args.device = require_cuda_device(args.device)
 
@@ -120,7 +121,7 @@ def main() -> None:
         manifest_path.as_posix(),
         args.device,
         sample_rate=args.sample_rate,
-        compute_dnsmos=not args.no_dnsmos,
+        compute_dnsmos=True,
         max_files=args.max_files,
         sample_dir=args.enhanced_dir,
         sample_count=3 if args.enhanced_dir else 0,

@@ -210,8 +210,22 @@ Model ONNX cu input/output dinamic: [1, 1, T]
 7. EVALUARE METRICI INTRUSIVE (evaluate_metrics.py)
 ----------------------------------------------------------------------
 
-Rulează modelul pe setul test și apoi măsoară PESQ, STOI, ΔSNR, SI-SDR,
-plus metricile compozite Hu & Loizou: CSIG, CBAK și COVL.
+Rulează modelul pe setul test și apoi măsoară următoarele metrici:
+
+- count
+- pesq_mean (PESQ mediu)
+- stoi_mean (STOI mediu)
+- sisdr_mean (SI-SDR mediu)
+- delta_snr_mean (ΔSNR mediu)
+- csig_mean (CSIG mediu)
+- cbak_mean (CBAK mediu)
+- covl_mean (COVL mediu)
+- dnsmos_sig_mean (DNSMOS SIG mediu) — obligatoriu
+- dnsmos_bak_mean (DNSMOS BAK mediu) — obligatoriu
+- dnsmos_ovr_mean (DNSMOS OVR mediu) — obligatoriu
+
+Aceste valori sunt exportate în JSON în `oracle_metrics.json`, iar fiecare
+rulare de evaluare trebuie să le colecteze pe toate.
 
 python evaluate_metrics.py \
   --checkpoint checkpoints_quantized/atennuate_32bit.pt \
