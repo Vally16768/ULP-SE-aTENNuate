@@ -11,7 +11,7 @@ pentru speech denoising. Proiectul este construit pentru:
 - inferență offline pe fișiere WAV
 - quantizare 32 / 16 / 8 / 4 / 2 biți
 - export ONNX
-- evaluare cu metrici intrusive (PESQ, STOI, SI-SDR, ΔSNR)
+- evaluare cu metrici intrusive (PESQ, STOI, SI-SDR, ΔSNR, CSIG, CBAK, COVL)
 - suport pentru DNSMOS + NISQA (non-intrusive)
 
 Structură proiect:
@@ -20,6 +20,7 @@ ULP-SE-ATTENNUATE/
     attenuate/model.py
     dataset/
         download_voicebank_demand.sh
+        dns5_pipeline.py
         prepare_splits_voicebank-demand.sh
         voicebank-demand/train.csv
         voicebank-demand/test.csv
@@ -51,10 +52,90 @@ pip install -r requirements.txt
 bash dataset/download_voicebank_demand.sh
 bash dataset/prepare_splits_voicebank-demand.sh
 
-Aceste scripturi creează:
+Pentru a ține dataset-ul pe un disc extern, folosește un root explicit:
 
-dataset/voicebank-demand/train.csv
-dataset/voicebank-demand/test.csv
+bash dataset/download_voicebank_demand.sh vb --root /mnt/ldm/ULP-SE-aTENNuate/dataset
+bash dataset/prepare_splits_voicebank-demand.sh \
+  --data-dir /mnt/ldm/ULP-SE-aTENNuate/dataset/voicebank-demand/16k
+
+Aceste scripturi creează manifestele:
+
+dataset/voicebank-demand/16k/train.csv
+dataset/voicebank-demand/16k/test.csv
+
+Dacă folosești `--data-dir`, manifestele sunt scrise direct în acel director.
+
+----------------------------------------------------------------------
+2B. PIPELINE DNS5 TRACK 1 HEADSET
+----------------------------------------------------------------------
+
+Pentru un corpus mare, relevant pentru modelul curent, folosește pipeline-ul
+offline DNS5 Track 1 Headset. Acesta descarcă, extrage, sintetizează perechi
+`noisy,clean` la `16 kHz`, verifică manifestele și poate șterge raw-ul doar
+după succes.
+
+Dataset final implicit:
+
+/mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k/
+    clean_train/
+    noisy_train/
+    clean_val/
+    noisy_val/
+    train_shards/*.csv
+    train.csv
+    val.csv
+
+Exemplu flux complet:
+
+python dataset/dns5_pipeline.py download \
+  --source smoke \
+  --staging-root /mnt/ldm/DNS-Challenge \
+  --output-root /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k
+
+python dataset/dns5_pipeline.py extract \
+  --source smoke \
+  --staging-root /mnt/ldm/DNS-Challenge \
+  --output-root /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k
+
+python dataset/dns5_pipeline.py synthesize \
+  --source smoke \
+  --staging-root /mnt/ldm/DNS-Challenge \
+  --output-root /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k \
+  --max-augmentations-per-clean 1
+
+python dataset/dns5_pipeline.py verify \
+  --source smoke \
+  --staging-root /mnt/ldm/DNS-Challenge \
+  --output-root /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k
+
+python dataset/dns5_pipeline.py cleanup \
+  --source smoke shared \
+  --staging-root /mnt/ldm/DNS-Challenge \
+  --output-root /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k \
+  --keep-devtest
+
+Alias-uri utile:
+
+- `smoke` = `VocalSet_48kHz_mono + emotional_speech + vctk_wav48_silence_trimmed + noise_ir + filelists_headset`
+- `all_clean` = toate sursele clean DNS5 Track 1
+- `all_relevant` = `all_clean + noise_ir + filelists_headset + devtest`
+
+Subcomenzi:
+
+- `download`
+- `extract`
+- `synthesize`
+- `verify`
+- `cleanup`
+
+Parametri importanți:
+
+- `--source`
+- `--output-root`
+- `--staging-root`
+- `--free-space-floor-gb`
+- `--max-augmentations-per-clean`
+- `--keep-devtest`
 
 ----------------------------------------------------------------------
 3. TRAINING MODEL (train.py)
@@ -64,6 +145,7 @@ Exemplu:
 
 python train.py \
   --train-csv dataset/voicebank-demand/16k/train.csv \
+  --val-csv dataset/voicebank-demand/16k/test.csv \
   --epochs 10 \
   --batch-size 4 \
   --lr 1e-3 \
@@ -72,6 +154,7 @@ python train.py \
 
 Parametri:
 --train-csv       CSV cu perechi noisy/clean
+--val-csv         CSV opțional noisy/clean pentru validare și early stopping
 --epochs          număr epoci
 --batch-size      batch size
 --lr              learning rate
@@ -127,7 +210,8 @@ Model ONNX cu input/output dinamic: [1, 1, T]
 7. EVALUARE METRICI INTRUSIVE (evaluate_metrics.py)
 ----------------------------------------------------------------------
 
-Rulează modelul pe setul test și apoi măsoară PESQ, STOI, ΔSNR, SI-SDR.
+Rulează modelul pe setul test și apoi măsoară PESQ, STOI, ΔSNR, SI-SDR,
+plus metricile compozite Hu & Loizou: CSIG, CBAK și COVL.
 
 python evaluate_metrics.py \
   --checkpoint checkpoints_quantized/atennuate_32bit.pt \
@@ -150,6 +234,12 @@ bash dataset/download_voicebank_demand.sh
 bash dataset/prepare_splits_voicebank-demand.sh
 
 python train.py --train-csv dataset/voicebank-demand/16k/train.csv
+
+Sau, pentru DNS5:
+
+python train.py \
+  --train-csv /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k/train.csv \
+  --val-csv /mnt/ldm/ULP-SE-aTENNuate/dataset/dns5-headset-16k/val.csv
 
 python quantize.py --base-checkpoint checkpoints/atennuate_fp32.pt
 
@@ -183,4 +273,3 @@ python inference.py \
 10. LICENȚĂ
 ----------------------------------------------------------------------
 MIT License — utilizare liberă academică, comercială și embedded.
-

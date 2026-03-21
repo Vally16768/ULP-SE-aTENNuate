@@ -1,4 +1,8 @@
-dataset
+dataset/*
+!dataset/download_voicebank_demand.sh
+!dataset/prepare_splits_voicebank-demand.sh
+!dataset/dns5_pipeline.py
+!dataset/prepare_voicebank_campaign.py
 .venv
 __pycache__
 *.egg-info
@@ -8,3 +12,12 @@ upload*
 build
 dist
 eval_outputs/
+mlflow/
+mlruns/
+mlflow.db
+mlflow.local.env
+campaign_logs
+checkpoints
+checkpoints_quantized
+mlruns
+train_logs/

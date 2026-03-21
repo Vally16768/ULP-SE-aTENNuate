@@ -3,7 +3,12 @@ librosa>=0.10
 einops>=0.7
 opt_einsum>=3.3
 huggingface_hub>=0.23
+speechbrain>=1.0.0
 soundfile>=0.12
+mlflow>=3.10
+pesq>=0.0.4
+pystoi>=0.4.1
+onnxruntime>=1.18
 
 # PyTorch + torchaudio (CUDA 12.1)
 torch>=2.3.0
