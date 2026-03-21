@@ -987,6 +987,8 @@ def synthesize_source(
         )
 
     speaker_lookup, clean_key_lookup = load_filelist_maps(staging_root)
+    extract_state = read_state(output_root, source.name, "extract") or {}
+    allow_salvage_fallback = extract_state.get("extract") == "partial-salvage-merged-stashes"
     noise_files, rir_files = discover_noise_and_rir(staging_root)
     if not noise_files:
         raise RuntimeError("No extracted noise files found. Run extract --source noise_ir first.")
@@ -1001,7 +1003,10 @@ def synthesize_source(
     duplicate_clean_files: List[str] = []
     seen_clean_keys: set[str] = set()
     for clean_path in discovered_clean_files:
+        rel_clean = clean_path.relative_to(clean_root)
         clean_key = lookup_clean_key(source.name, clean_path, clean_root, clean_key_lookup)
+        if clean_key is None and allow_salvage_fallback:
+            clean_key = canonical_source_key(source.name, rel_clean.as_posix())
         if clean_key is None:
             skipped_unlisted_clean_files.append(clean_path.resolve().as_posix())
             continue
@@ -1113,6 +1118,7 @@ def synthesize_source(
         {
             "discovered_clean_files": len(discovered_clean_files),
             "clean_files": len(clean_items),
+            "salvage_fallback": allow_salvage_fallback,
             "generated_pairs": generated,
             "reused_outputs": reused,
             "train_rows": len(train_rows),
@@ -1888,6 +1894,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.cmd == "purge-trash":
+        purge_trash(args.trash_path)
+        return 0
+
     ensure_dir(args.output_root)
     ensure_dir(args.staging_root)
 
@@ -1945,9 +1955,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.output_root,
             keep_devtest=args.keep_devtest,
         )
-        return 0
-    if args.cmd == "purge-trash":
-        purge_trash(args.trash_path)
         return 0
     if args.cmd == "run":
         run_pipeline(args)
